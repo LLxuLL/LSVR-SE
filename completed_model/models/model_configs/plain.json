@@ -1,0 +1,226 @@
+{
+  "plain": {
+    "name": "plain",
+    "description": "Editing configuration for airplane models",
+    "operations": {
+      "common": {
+        "add": {
+          "description": "Add a new airplane to fly in formation",
+          "parameters": {
+            "direction": {
+              "type": "string",
+              "default": "right",
+              "options": ["left", "right", "above", "below"],
+              "description": "Direction to add the new airplane"
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "copy_mesh",
+              "parameters": {
+                "mesh": "input_mesh"
+              },
+              "output": "copied_mesh"
+            },
+            {
+              "operation": "get_bounds",
+              "parameters": {
+                "mesh": "input_mesh"
+              },
+              "output": "bounds"
+            },
+            {
+              "operation": "calculate_translation_vector",
+              "parameters": {
+                "direction": "{direction}",
+                "bounds": "bounds",
+                "margin": 2.0
+              },
+              "output": "translation"
+            },
+            {
+              "operation": "translate_mesh",
+              "parameters": {
+                "mesh": "copied_mesh",
+                "vector": "translation"
+              },
+              "output": "translated_mesh"
+            },
+            {
+              "operation": "combine_meshes",
+              "parameters": {
+                "meshes": ["input_mesh", "translated_mesh"]
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "rotate": {
+          "description": "Rotate the airplane (e.g., to bank or turn)",
+          "parameters": {
+            "angle": {
+              "type": "float",
+              "default": 15.0,
+              "description": "Rotation angle (degrees)"
+            },
+            "axis": {
+              "type": "list",
+              "default": [0, 0, 1],
+              "description": "Rotation axis (e.g., [0,0,1] to bank)"
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "rotate_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "angle": "{angle}",
+                "axis": "{axis}"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "translate": {
+          "description": "Translate the airplane (fly forward)",
+          "parameters": {
+            "vector": {
+              "type": "list",
+              "default": [100, 0, 0],
+              "description": "Translation vector (X, Y, Z)"
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "translate_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "vector": "{vector}"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "scale": {
+          "description": "Scale the airplane model",
+          "parameters": {
+            "factor": {
+              "type": "float",
+              "default": 1.5,
+              "description": "Uniform scaling factor"
+            },
+            "center": {
+              "type": "string",
+              "default": "center",
+              "options": ["origin", "center"],
+              "description": "Scaling center"
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "calculate_scale_center",
+              "parameters": {
+                "mesh": "input_mesh",
+                "center_type": "{center}"
+              },
+              "output": "scale_center"
+            },
+            {
+              "operation": "scale_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "factor": "{factor}",
+                "center": "scale_center"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        }
+      },
+      "specific": {
+        "take_off": {
+          "description": "Simulates the airplane taking off, pitching up and moving forward.",
+          "parameters": {
+            "pitch_angle": {
+              "type": "float",
+              "default": 15.0,
+              "description": "The upward pitch angle of the plane."
+            },
+            "altitude": {
+              "type": "float",
+              "default": 50.0,
+              "description": "The altitude to gain during takeoff."
+            },
+            "forward_distance": {
+              "type": "float",
+              "default": 200.0,
+              "description": "The horizontal distance to travel forward."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "rotate_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "angle": "{pitch_angle}",
+                "axis": [0, 1, 0]
+              },
+              "output": "pitched_plane"
+            },
+            {
+              "operation": "translate_mesh",
+              "parameters": {
+                "mesh": "pitched_plane",
+                "vector": [0, 0, "{altitude}"]
+              },
+              "output": "lifted_plane"
+            },
+            {
+              "operation": "translate_mesh",
+              "parameters": {
+                "mesh": "lifted_plane",
+                "vector": ["{forward_distance}", 0, 0]
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "deploy_landing_gear": {
+          "description": "Deploys or retracts the landing gear.",
+          "parameters": {
+            "vertical_offset": {
+              "type": "float",
+              "default": -8.0,
+              "description": "Vertical distance to move the gear. Negative to deploy, positive to retract."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "separate_extraction",
+              "parameters": {
+                "mesh": "input_mesh",
+                "part_name": "landing_gear"
+              },
+              "outputs": ["landing_gear_mesh", "plane_body_mesh"]
+            },
+            {
+              "operation": "translate_mesh",
+              "parameters": {
+                "mesh": "landing_gear_mesh",
+                "vector": [0, "{vertical_offset}", 0]
+              },
+              "output": "moved_gear"
+            },
+            {
+              "operation": "combine_meshes",
+              "parameters": {
+                "meshes": ["plane_body_mesh", "moved_gear"]
+              },
+              "output": "result_mesh"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,198 @@
+{
+  "mountain": {
+    "name": "mountain",
+    "description": "Editing configuration for mountain and terrain models",
+    "operations": {
+      "common": {
+        "add": {
+          "description": "Add a new mountain nearby",
+          "parameters": {
+            "direction": {
+              "type": "string",
+              "default": "right",
+              "options": ["left", "right", "front", "back"],
+              "description": "Direction to add the new mountain"
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "copy_mesh",
+              "parameters": {
+                "mesh": "input_mesh"
+              },
+              "output": "copied_mesh"
+            },
+            {
+              "operation": "get_bounds",
+              "parameters": {
+                "mesh": "input_mesh"
+              },
+              "output": "bounds"
+            },
+            {
+              "operation": "calculate_translation_vector",
+              "parameters": {
+                "direction": "{direction}",
+                "bounds": "bounds"
+              },
+              "output": "translation"
+            },
+            {
+              "operation": "translate_mesh",
+              "parameters": {
+                "mesh": "copied_mesh",
+                "vector": "translation"
+              },
+              "output": "translated_mesh"
+            },
+            {
+              "operation": "combine_meshes",
+              "parameters": {
+                "meshes": ["input_mesh", "translated_mesh"]
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "rotate": {
+          "description": "Rotate the mountain model",
+          "parameters": {
+            "angle": {
+              "type": "float",
+              "default": 30.0,
+              "description": "Rotation angle (degrees)"
+            },
+            "axis": {
+              "type": "list",
+              "default": [0, 1, 0],
+              "description": "Rotation axis (Y-axis for terrain)"
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "rotate_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "angle": "{angle}",
+                "axis": "{axis}"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "translate": {
+          "description": "Translate the mountain model",
+          "parameters": {
+            "vector": {
+              "type": "list",
+              "default": [50, 0, 0],
+              "description": "Translation vector (X, Y, Z)"
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "translate_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "vector": "{vector}"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "scale": {
+          "description": "Scale the mountain model",
+          "parameters": {
+            "factor": {
+              "type": "float",
+              "default": 1.5,
+              "description": "Scaling factor"
+            },
+            "center": {
+              "type": "string",
+              "default": "origin",
+              "options": ["origin", "center"],
+              "description": "Scaling center (origin is best for terrain)"
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "calculate_scale_center",
+              "parameters": {
+                "mesh": "input_mesh",
+                "center_type": "{center}"
+              },
+              "output": "scale_center"
+            },
+            {
+              "operation": "scale_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "factor": "{factor}",
+                "center": "scale_center"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        }
+      },
+      "specific": {
+        "add_snow_cap": {
+          "description": "Adds a white snow cap to the mountain's peak.",
+          "parameters": {
+            "coverage": {
+              "type": "float",
+              "default": 0.25,
+              "description": "Proportion of the mountain's height to be covered in snow (e.g., 0.25 means top 25%)."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "separate_by_height",
+              "parameters": {
+                "mesh": "input_mesh",
+                "ratio": "{coverage}"
+              },
+              "outputs": ["peak_mesh", "base_mesh"]
+            },
+            {
+              "operation": "recolor_mesh",
+              "parameters": {
+                "mesh": "peak_mesh",
+                "color_preset": "snow_white"
+              },
+              "output": "snowy_peak"
+            },
+            {
+              "operation": "combine_meshes",
+              "parameters": {
+                "meshes": ["base_mesh", "snowy_peak"]
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "erode_mountain": {
+          "description": "Smoothes the mountain's peaks and ridges to simulate geological erosion.",
+          "parameters": {
+            "intensity": {
+              "type": "float",
+              "default": 0.5,
+              "description": "The intensity of the erosion effect (0.0 to 1.0)."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "smooth_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "intensity": "{intensity}"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

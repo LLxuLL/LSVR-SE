@@ -1,0 +1,238 @@
+{
+  "lawn_mower": {
+    "name": "lawn_mower",
+    "description": "Editing configuration for lawn mower models",
+    "operations": {
+      "common": {
+        "add": {
+          "description": "Add a new lawn mower nearby",
+          "parameters": {
+            "direction": {
+              "type": "string",
+              "default": "right",
+              "options": ["left", "right", "up", "down", "front", "back"],
+              "description": "Direction to add the new lawn mower"
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "copy_mesh",
+              "parameters": {
+                "mesh": "input_mesh"
+              },
+              "output": "copied_mesh"
+            },
+            {
+              "operation": "get_bounds",
+              "parameters": {
+                "mesh": "input_mesh"
+              },
+              "output": "bounds"
+            },
+            {
+              "operation": "calculate_translation_vector",
+              "parameters": {
+                "direction": "{direction}",
+                "bounds": "bounds"
+              },
+              "output": "translation"
+            },
+            {
+              "operation": "translate_mesh",
+              "parameters": {
+                "mesh": "copied_mesh",
+                "vector": "translation"
+              },
+              "output": "translated_mesh"
+            },
+            {
+              "operation": "combine_meshes",
+              "parameters": {
+                "meshes": ["input_mesh", "translated_mesh"]
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "rotate": {
+          "description": "Rotate the lawn mower model",
+          "parameters": {
+            "angle": {
+              "type": "float",
+              "default": 90.0,
+              "description": "Rotation angle (degrees)"
+            },
+            "axis": {
+              "type": "list",
+              "default": [0, 1, 0],
+              "description": "Rotation axis (X, Y, Z)"
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "rotate_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "angle": "{angle}",
+                "axis": "{axis}"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "translate": {
+          "description": "Translate the lawn mower model",
+          "parameters": {
+            "vector": {
+              "type": "list",
+              "default": [5, 0, 0],
+              "description": "Translation vector (X, Y, Z)"
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "translate_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "vector": "{vector}"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "scale": {
+          "description": "Scale the lawn mower model uniformly",
+          "parameters": {
+            "factor": {
+              "type": "float",
+              "default": 1.1,
+              "description": "Scaling factor"
+            },
+            "center": {
+              "type": "string",
+              "default": "center",
+              "options": ["origin", "center"],
+              "description": "Scaling center"
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "calculate_scale_center",
+              "parameters": {
+                "mesh": "input_mesh",
+                "center_type": "{center}"
+              },
+              "output": "scale_center"
+            },
+            {
+              "operation": "scale_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "factor": "{factor}",
+                "center": "scale_center"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        }
+      },
+      "specific": {
+        "adjust_handle": {
+          "description": "Folds or unfolds the handle of the lawn mower.",
+          "parameters": {
+            "angle": {
+              "type": "float",
+              "default": -45.0,
+              "description": "Angle to pivot the handle. Negative for folding down, positive for raising up."
+            },
+            "handle_ratio": {
+              "type": "float",
+              "default": 0.6,
+              "description": "The length ratio of the handle part to the main body."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "split_mesh_by_axis",
+              "parameters": {
+                "mesh": "input_mesh",
+                "axis": "z",
+                "ratio": "{handle_ratio}",
+                "from_end": "back"
+              },
+              "outputs": ["body_mesh", "handle_mesh"]
+            },
+            {
+              "operation": "get_bounds",
+              "parameters": {
+                "mesh": "handle_mesh"
+              },
+              "output": "handle_bounds"
+            },
+            {
+              "operation": "calculate_pivot_point",
+              "parameters": {
+                  "bounds": "handle_bounds",
+                  "edge": "front_center"
+              },
+              "output": "pivot_point"
+            },
+            {
+              "operation": "rotate_mesh_around_pivot",
+              "parameters": {
+                "mesh": "handle_mesh",
+                "angle": "{angle}",
+                "axis": [1, 0, 0],
+                "pivot": "pivot_point"
+              },
+              "output": "rotated_handle"
+            },
+            {
+              "operation": "combine_meshes",
+              "parameters": {
+                "meshes": ["body_mesh", "rotated_handle"]
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "change_cutting_height": {
+          "description": "Raises or lowers the mower deck, simulating a change in cutting height.",
+          "parameters": {
+            "height_factor": {
+              "type": "float",
+              "default": 0.9,
+              "description": "Vertical scale factor to adjust the body height (e.g., <1 for lower, >1 for higher)."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "calculate_scale_center",
+              "parameters": {
+                "mesh": "input_mesh",
+                "center_type": "origin"
+              },
+              "output": "scale_center"
+            },
+            {
+              "operation": "calculate_non_uniform_scale_vector",
+              "parameters": {
+                "y_factor": "{height_factor}"
+              },
+              "output": "scale_vector"
+            },
+            {
+              "operation": "scale_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "factor": "scale_vector",
+                "center": "scale_center"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

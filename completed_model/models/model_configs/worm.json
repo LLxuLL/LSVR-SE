@@ -1,0 +1,267 @@
+{
+  "worm": {
+    "name": "worm",
+    "description": "Worm model editing configuration.",
+    "operations": {
+      "common": {
+        "add": {
+          "description": "Add a new worm nearby.",
+          "parameters": {
+            "direction": {
+              "type": "string",
+              "default": "right",
+              "options": ["left", "right", "front", "back"],
+              "description": "Direction to add the new worm."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "copy_mesh",
+              "parameters": {
+                "mesh": "input_mesh"
+              },
+              "output": "copied_mesh"
+            },
+            {
+              "operation": "get_bounds",
+              "parameters": {
+                "mesh": "input_mesh"
+              },
+              "output": "bounds"
+            },
+            {
+              "operation": "calculate_translation_vector",
+              "parameters": {
+                "direction": "{direction}",
+                "bounds": "bounds"
+              },
+              "output": "translation"
+            },
+            {
+              "operation": "translate_mesh",
+              "parameters": {
+                "mesh": "copied_mesh",
+                "vector": "translation"
+              },
+              "output": "translated_mesh"
+            },
+            {
+              "operation": "combine_meshes",
+              "parameters": {
+                "meshes": ["input_mesh", "translated_mesh"]
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "translate": {
+          "description": "Translate the worm model.",
+          "parameters": {
+            "vector": {
+              "type": "list_float",
+              "default": [0.5, 0.0, 0.0],
+              "description": "Translation vector [x, y, z]."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "translate_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "vector": "{vector}"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "rotate": {
+          "description": "Rotate the worm model.",
+          "parameters": {
+            "angle": {
+              "type": "float",
+              "default": 90.0,
+              "description": "Rotation angle in degrees."
+            },
+            "axis": {
+              "type": "list_float",
+              "default": [0.0, 1.0, 0.0],
+              "description": "Rotation axis vector [x, y, z]."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "rotate_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "angle": "{angle}",
+                "axis": "{axis}"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "scale": {
+          "description": "Scale the worm model.",
+          "parameters": {
+            "factor": {
+              "type": "float",
+              "default": 1.5,
+              "description": "Scaling factor for length and width."
+            },
+            "center": {
+              "type": "string",
+              "default": "center",
+              "options": ["origin", "center"],
+              "description": "The center point for scaling."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "calculate_scale_center",
+              "parameters": {
+                "mesh": "input_mesh",
+                "center_type": "{center}"
+              },
+              "output": "scale_center"
+            },
+            {
+              "operation": "scale_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "factor": "{factor}",
+                "center": "scale_center"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        }
+      },
+      "specific": {
+        "bend": {
+          "description": "Bend the worm's body to one side.",
+          "parameters": {
+            "angle": {
+              "type": "float",
+              "default": 45.0,
+              "description": "The angle of the bend."
+            },
+            "direction": {
+              "type": "string",
+              "default": "left",
+              "options": ["left", "right"],
+              "description": "The direction of the bend."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "split_mesh_by_axis",
+              "parameters": {
+                "mesh": "input_mesh",
+                "axis": "x",
+                "ratio": 0.5
+              },
+              "output": ["back_half", "front_half"]
+            },
+            {
+              "operation": "calculate_pivot_point",
+              "parameters": {
+                "mesh": "front_half",
+                "pivot_type": "edge",
+                "edge": "back"
+              },
+              "output": "bend_pivot"
+            },
+            {
+              "operation": "calculate_rotation_axis",
+              "parameters": {
+                "mesh": "front_half",
+                "edge": "up"
+              },
+              "output": "rotation_axis"
+            },
+            {
+              "operation": "adjust_angle_by_direction",
+              "parameters": {
+                "angle": "{angle}",
+                "direction": "{direction}"
+              },
+              "output": "final_angle"
+            },
+            {
+              "operation": "rotate_mesh_around_pivot",
+              "parameters": {
+                "mesh": "front_half",
+                "pivot": "bend_pivot",
+                "axis": "rotation_axis",
+                "angle": "final_angle"
+              },
+              "output": "bent_front_half"
+            },
+            {
+              "operation": "combine_meshes",
+              "parameters": {
+                "meshes": ["back_half", "bent_front_half"]
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "raise_head": {
+          "description": "Pose the worm to raise its head, as if sensing.",
+          "parameters": {
+            "angle": {
+              "type": "float",
+              "default": 30.0,
+              "description": "The upward angle for raising the head."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "separate_extraction",
+              "parameters": {
+                "mesh": "input_mesh",
+                "part_name": "head",
+                "ratio": 0.1
+              },
+              "output": ["worm_body", "worm_head"]
+            },
+            {
+              "operation": "calculate_pivot_point",
+              "parameters": {
+                "mesh": "worm_head",
+                "pivot_type": "edge",
+                "edge": "back"
+              },
+              "output": "neck_pivot"
+            },
+            {
+              "operation": "calculate_rotation_axis",
+              "parameters": {
+                "mesh": "worm_head",
+                "edge": "right"
+              },
+              "output": "rotation_axis"
+            },
+            {
+              "operation": "rotate_mesh_around_pivot",
+              "parameters": {
+                "mesh": "worm_head",
+                "pivot": "neck_pivot",
+                "axis": "rotation_axis",
+                "angle": "{angle}"
+              },
+              "output": "raised_head"
+            },
+            {
+              "operation": "combine_meshes",
+              "parameters": {
+                "meshes": ["worm_body", "raised_head"]
+              },
+              "output": "result_mesh"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

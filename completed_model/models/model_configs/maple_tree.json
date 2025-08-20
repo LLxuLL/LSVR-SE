@@ -1,0 +1,195 @@
+{
+  "maple_tree": {
+    "name": "maple_tree",
+    "description": "Editing configuration for maple tree models",
+    "operations": {
+      "common": {
+        "add": {
+          "description": "Add a new maple tree nearby",
+          "parameters": {
+            "direction": {
+              "type": "string",
+              "default": "right",
+              "options": ["left", "right", "front", "back"],
+              "description": "Direction to add the new tree"
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "copy_mesh",
+              "parameters": {
+                "mesh": "input_mesh"
+              },
+              "output": "copied_mesh"
+            },
+            {
+              "operation": "get_bounds",
+              "parameters": {
+                "mesh": "input_mesh"
+              },
+              "output": "bounds"
+            },
+            {
+              "operation": "calculate_translation_vector",
+              "parameters": {
+                "direction": "{direction}",
+                "bounds": "bounds"
+              },
+              "output": "translation"
+            },
+            {
+              "operation": "translate_mesh",
+              "parameters": {
+                "mesh": "copied_mesh",
+                "vector": "translation"
+              },
+              "output": "translated_mesh"
+            },
+            {
+              "operation": "combine_meshes",
+              "parameters": {
+                "meshes": ["input_mesh", "translated_mesh"]
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "rotate": {
+          "description": "Rotate the maple tree model",
+          "parameters": {
+            "angle": {
+              "type": "float",
+              "default": 25.0,
+              "description": "Rotation angle (degrees) around the Y-axis"
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "rotate_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "angle": "{angle}",
+                "axis": [0, 1, 0]
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "translate": {
+          "description": "Translate the maple tree model",
+          "parameters": {
+            "vector": {
+              "type": "list",
+              "default": [10, 0, 0],
+              "description": "Translation vector (X, Y, Z)"
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "translate_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "vector": "{vector}"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "scale": {
+          "description": "Scale the maple tree model uniformly",
+          "parameters": {
+            "factor": {
+              "type": "float",
+              "default": 1.2,
+              "description": "Scaling factor"
+            },
+            "center": {
+              "type": "string",
+              "default": "origin",
+              "options": ["origin", "center"],
+              "description": "Scaling center (origin is better for trees to grow from the base)"
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "calculate_scale_center",
+              "parameters": {
+                "mesh": "input_mesh",
+                "center_type": "{center}"
+              },
+              "output": "scale_center"
+            },
+            {
+              "operation": "scale_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "factor": "{factor}",
+                "center": "scale_center"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        }
+      },
+      "specific": {
+        "change_season": {
+          "description": "Changes the color of the leaves to match a specific season.",
+          "parameters": {
+            "season": {
+              "type": "string",
+              "default": "autumn",
+              "options": ["spring", "summer", "autumn"],
+              "description": "The target season, which determines the leaf color."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "separate_extraction",
+              "parameters": {
+                "mesh": "input_mesh",
+                "part_name": "leaves"
+              },
+              "outputs": ["leaves_mesh", "trunk_mesh"]
+            },
+            {
+              "operation": "recolor_mesh",
+              "parameters": {
+                "mesh": "leaves_mesh",
+                "color_preset": "{season}"
+              },
+              "output": "recolored_leaves"
+            },
+            {
+              "operation": "combine_meshes",
+              "parameters": {
+                "meshes": ["trunk_mesh", "recolored_leaves"]
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "shed_leaves": {
+          "description": "Removes the leaves from the tree, simulating a winter state.",
+          "parameters": {},
+          "atomic_operations": [
+            {
+              "operation": "separate_extraction",
+              "parameters": {
+                "mesh": "input_mesh",
+                "part_name": "leaves"
+              },
+              "outputs": ["leaves_mesh", "trunk_mesh"]
+            },
+            {
+              "operation": "copy_mesh",
+              "parameters": {
+                "mesh": "trunk_mesh"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

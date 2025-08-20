@@ -1,0 +1,275 @@
+{
+    "camel": {
+        "name": "camel",
+        "description": "Camel model editing configuration",
+        "operations": {
+            "common": {
+                "add": {
+                    "description": "Add a new camel",
+                    "parameters": {
+                        "direction": {
+                            "type": "string",
+                            "default": "right",
+                            "options": [
+                                "left",
+                                "right",
+                                "up",
+                                "down",
+                                "front",
+                                "back"
+                            ],
+                            "description": "Add directions"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "copy_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh"
+                            },
+                            "output": "copied_mesh"
+                        },
+                        {
+                            "operation": "get_bounds",
+                            "parameters": {
+                                "mesh": "input_mesh"
+                            },
+                            "output": "bounds"
+                        },
+                        {
+                            "operation": "calculate_translation_vector",
+                            "parameters": {
+                                "direction": "{direction}",
+                                "bounds": "bounds"
+                            },
+                            "output": "translation"
+                        },
+                        {
+                            "operation": "translate_mesh",
+                            "parameters": {
+                                "mesh": "copied_mesh",
+                                "vector": "translation"
+                            },
+                            "output": "translated_mesh"
+                        },
+                        {
+                            "operation": "combine_meshes",
+                            "parameters": {
+                                "meshes": [
+                                    "input_mesh",
+                                    "translated_mesh"
+                                ]
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "rotate": {
+                    "description": "Rotating model",
+                    "parameters": {
+                        "angle": {
+                            "type": "float",
+                            "default": 90.0,
+                            "description": "Rotation angle (degrees)"
+                        },
+                        "axis": {
+                            "type": "string",
+                            "default": "y",
+                            "options": [
+                                "x",
+                                "y",
+                                "z"
+                            ],
+                            "description": "Rotation axis"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "rotate_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "angle": "{angle}",
+                                "axis": "{axis}"
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "translate": {
+                    "description": "Translation model",
+                    "parameters": {
+                        "vector": {
+                            "type": "array",
+                            "default": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "description": "Translation vector"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "translate_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "vector": "{vector}"
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "scale": {
+                    "description": "Scaling model",
+                    "parameters": {
+                        "factor": {
+                            "type": "float",
+                            "default": 1.0,
+                            "description": "Scaling factor"
+                        },
+                        "center": {
+                            "type": "string",
+                            "default": "center",
+                            "options": [
+                                "origin",
+                                "center"
+                            ],
+                            "description": "Zoom Center"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "calculate_scale_center",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "center_type": "{center}"
+                            },
+                            "output": "scale_center"
+                        },
+                        {
+                            "operation": "scale_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "factor": "{factor}",
+                                "center": "scale_center"
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                }
+            },
+            "specific": {
+                "drink_water": {
+                    "description": "Lower the camel's head and neck to drink.",
+                    "parameters": {
+                        "angle": {
+                            "type": "float",
+                            "default": 60.0,
+                            "description": "The downward angle to lower the head."
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "separate_extraction",
+                            "parameters": { "mesh": "input_mesh", "region": "head_and_neck" },
+                            "output": [ "body_mesh", "neck_mesh" ]
+                        },
+                        {
+                            "operation": "calculate_pivot_point",
+                            "parameters": { "mesh": "neck_mesh", "pivot_type": "neck_base" },
+                            "output": "pivot_point"
+                        },
+                        {
+                            "operation": "calculate_rotation_axis",
+                            "parameters": { "mesh": "neck_mesh", "axis_type": "horizontal_axis" },
+                            "output": "rotation_axis"
+                        },
+                        {
+                            "operation": "rotate_mesh_around_pivot",
+                            "parameters": { "mesh": "neck_mesh", "angle": "{angle}", "pivot": "pivot_point", "axis": "rotation_axis" },
+                            "output": "lowered_neck"
+                        },
+                        {
+                            "operation": "combine_meshes",
+                            "parameters": { "meshes": [ "body_mesh", "lowered_neck" ] },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "sit_down": {
+                    "description": "Make the camel kneel and sit down by folding its legs.",
+                    "parameters": {},
+                    "atomic_operations": [
+                        {
+                            "operation": "separate_extraction",
+                            "parameters": { "mesh": "input_mesh", "regions": ["front_legs", "rear_legs"] },
+                            "output": [ "body_mesh", "front_legs_mesh", "rear_legs_mesh" ]
+                        },
+                        {
+                            "operation": "fold_legs",
+                            "parameters": { "mesh": "front_legs_mesh", "type": "front_camel" },
+                            "output": "folded_front_legs"
+                        },
+                        {
+                            "operation": "fold_legs",
+                            "parameters": { "mesh": "rear_legs_mesh", "type": "rear_camel" },
+                            "output": "folded_rear_legs"
+                        },
+                        {
+                            "operation": "calculate_translation_vector",
+                            "parameters": { "direction": "down", "mesh_bounds": "folded_front_legs" },
+                            "output": "drop_vector"
+                        },
+                        {
+                            "operation": "translate_mesh",
+                            "parameters": { "mesh": "body_mesh", "vector": "drop_vector" },
+                            "output": "lowered_body"
+                        },
+                        {
+                            "operation": "combine_meshes",
+                            "parameters": { "meshes": [ "lowered_body", "folded_front_legs", "folded_rear_legs" ] },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "chew": {
+                    "description": "Simulate a chewing motion with the lower jaw.",
+                    "parameters": {
+                        "open_angle": {
+                            "type": "float",
+                            "default": 10.0,
+                            "description": "Angle to open the jaw."
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "separate_extraction",
+                            "parameters": { "mesh": "input_mesh", "region": "lower_jaw" },
+                            "output": [ "main_body", "jaw_mesh" ]
+                        },
+                        {
+                            "operation": "calculate_pivot_point",
+                            "parameters": { "mesh": "jaw_mesh", "pivot_type": "jaw_hinge" },
+                            "output": "pivot_point"
+                        },
+                        {
+                            "operation": "calculate_rotation_axis",
+                            "parameters": { "mesh": "jaw_mesh", "axis_type": "horizontal_axis" },
+                            "output": "rotation_axis"
+                        },
+                        {
+                            "operation": "rotate_mesh_around_pivot",
+                            "parameters": { "mesh": "jaw_mesh", "angle": "{open_angle}", "pivot": "pivot_point", "axis": "rotation_axis" },
+                            "output": "chewing_jaw"
+                        },
+                        {
+                            "operation": "combine_meshes",
+                            "parameters": { "meshes": [ "main_body", "chewing_jaw" ] },
+                            "output": "result_mesh"
+                        }
+                    ]
+                }
+            }
+        }
+    }
+}

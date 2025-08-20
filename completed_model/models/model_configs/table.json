@@ -1,0 +1,226 @@
+{
+    "table": {
+        "name": "table",
+        "description": "桌子模型的编辑配置",
+        "operations": {
+            "common": {
+                "add": {
+                    "description": "在旁边放置一张新桌子",
+                    "parameters": {
+                        "direction": {
+                            "type": "string",
+                            "default": "right",
+                            "options": ["left", "right", "front", "back"],
+                            "description": "添加新桌子的方向"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "copy_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh"
+                            },
+                            "output": "copied_mesh"
+                        },
+                        {
+                            "operation": "get_bounds",
+                            "parameters": {
+                                "mesh": "input_mesh"
+                            },
+                            "output": "bounds"
+                        },
+                        {
+                            "operation": "calculate_translation_vector",
+                            "parameters": {
+                                "direction": "{direction}",
+                                "bounds": "bounds"
+                            },
+                            "output": "translation"
+                        },
+                        {
+                            "operation": "translate_mesh",
+                            "parameters": {
+                                "mesh": "copied_mesh",
+                                "vector": "translation"
+                            },
+                            "output": "translated_mesh"
+                        },
+                        {
+                            "operation": "combine_meshes",
+                            "parameters": {
+                                "meshes": ["input_mesh", "translated_mesh"]
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "rotate": {
+                    "description": "围绕中心旋转整张桌子",
+                    "parameters": {
+                        "angle": {
+                            "type": "float",
+                            "default": 90.0,
+                            "description": "旋转角度 (度)"
+                        },
+                        "axis": {
+                            "type": "vector3d",
+                            "default": [0, 1, 0],
+                            "description": "旋转轴 (通常为Y轴)"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "rotate_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "angle": "{angle}",
+                                "axis": "{axis}"
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "scale": {
+                    "description": "等比例缩放整张桌子",
+                    "parameters": {
+                        "factor": {
+                            "type": "float",
+                            "default": 1.5,
+                            "description": "缩放因子"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "calculate_scale_center",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "center_type": "origin"
+                            },
+                            "output": "scale_center"
+                        },
+                        {
+                            "operation": "scale_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "factor": "{factor}",
+                                "center": "scale_center"
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "translate": {
+                    "description": "移动整张桌子的位置",
+                    "parameters": {
+                        "vector": {
+                            "type": "vector3d",
+                            "default": [1, 0, 0],
+                            "description": "平移向量"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "translate_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "vector": "{vector}"
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                }
+            },
+            "specific": {
+                "adjust_dimensions": {
+                    "description": "非等比例地调整桌子的长度、宽度或高度",
+                    "parameters": {
+                        "length_factor": {
+                            "type": "float",
+                            "default": 1.5,
+                            "description": "长度的缩放因子 (沿X轴)"
+                        },
+                        "width_factor": {
+                            "type": "float",
+                            "default": 1.0,
+                            "description": "宽度的缩放因子 (沿Z轴)"
+                        },
+                        "height_factor": {
+                            "type": "float",
+                            "default": 1.0,
+                            "description": "高度的缩放因子 (沿Y轴)"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "calculate_scale_center",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "center_type": "origin"
+                            },
+                            "output": "scale_center"
+                        },
+                        {
+                            "operation": "scale_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "factor": ["{length_factor}", "{height_factor}", "{width_factor}"],
+                                "center": "scale_center"
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "change_top_thickness": {
+                    "description": "改变桌面的厚度，桌腿保持不变",
+                    "parameters": {
+                        "thickness_factor": {
+                            "type": "float",
+                            "default": 2.0,
+                            "description": "桌面厚度的增加或减少倍数"
+                        },
+                        "top_ratio": {
+                            "type": "float",
+                            "default": 0.85,
+                            "description": "桌面部分在总高度中的起始比例"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "split_mesh_by_axis",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "axis": "Y",
+                                "split_point_ratio": "{top_ratio}"
+                            },
+                            "output": ["legs_base", "tabletop"]
+                        },
+                        {
+                            "operation": "calculate_scale_center",
+                            "parameters": {
+                                "mesh": "tabletop",
+                                "center_type": "bottom"
+                            },
+                            "output": "top_scale_center"
+                        },
+                        {
+                            "operation": "scale_mesh",
+                            "parameters": {
+                                "mesh": "tabletop",
+                                "factor": [1.0, "{thickness_factor}", 1.0],
+                                "center": "top_scale_center"
+                            },
+                            "output": "scaled_tabletop"
+                        },
+                        {
+                            "operation": "combine_meshes",
+                            "parameters": {
+                                "meshes": ["legs_base", "scaled_tabletop"]
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,208 @@
+{
+  "orange": {
+    "name": "orange",
+    "description": "Editing configuration for an orange fruit model",
+    "operations": {
+      "common": {
+        "add": {
+          "description": "Add a new orange nearby",
+          "parameters": {
+            "direction": {
+              "type": "string",
+              "default": "right",
+              "options": ["left", "right", "front", "back"],
+              "description": "Direction to add the new orange"
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "copy_mesh",
+              "parameters": {
+                "mesh": "input_mesh"
+              },
+              "output": "copied_mesh"
+            },
+            {
+              "operation": "get_bounds",
+              "parameters": {
+                "mesh": "input_mesh"
+              },
+              "output": "bounds"
+            },
+            {
+              "operation": "calculate_translation_vector",
+              "parameters": {
+                "direction": "{direction}",
+                "bounds": "bounds"
+              },
+              "output": "translation"
+            },
+            {
+              "operation": "translate_mesh",
+              "parameters": {
+                "mesh": "copied_mesh",
+                "vector": "translation"
+              },
+              "output": "translated_mesh"
+            },
+            {
+              "operation": "combine_meshes",
+              "parameters": {
+                "meshes": ["input_mesh", "translated_mesh"]
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "rotate": {
+          "description": "Rotate the orange model (roll)",
+          "parameters": {
+            "angle": {
+              "type": "float",
+              "default": 30.0,
+              "description": "Rotation angle (degrees)"
+            },
+            "axis": {
+              "type": "list",
+              "default": [0, 0, 1],
+              "description": "Rotation axis (X, Y, Z)"
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "rotate_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "angle": "{angle}",
+                "axis": "{axis}"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "translate": {
+          "description": "Translate the orange model",
+          "parameters": {
+            "vector": {
+              "type": "list",
+              "default": [3, 0, 0],
+              "description": "Translation vector (X, Y, Z)"
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "translate_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "vector": "{vector}"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "scale": {
+          "description": "Scale the orange model (to make it larger or smaller)",
+          "parameters": {
+            "factor": {
+              "type": "float",
+              "default": 1.25,
+              "description": "Scaling factor"
+            },
+            "center": {
+              "type": "string",
+              "default": "center",
+              "options": ["origin", "center"],
+              "description": "Scaling center"
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "calculate_scale_center",
+              "parameters": {
+                "mesh": "input_mesh",
+                "center_type": "{center}"
+              },
+              "output": "scale_center"
+            },
+            {
+              "operation": "scale_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "factor": "{factor}",
+                "center": "scale_center"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        }
+      },
+      "specific": {
+        "peel_orange": {
+          "description": "Separates the peel from the fruit and moves it aside.",
+          "parameters": {},
+          "atomic_operations": [
+            {
+              "operation": "separate_extraction",
+              "parameters": {
+                "mesh": "input_mesh",
+                "part_name": "peel"
+              },
+              "outputs": ["peel_mesh", "fruit_mesh"]
+            },
+            {
+              "operation": "translate_mesh",
+              "parameters": {
+                "mesh": "peel_mesh",
+                "vector": [0, -0.5, 0]
+              },
+              "output": "peeled_part"
+            },
+            {
+              "operation": "combine_meshes",
+              "parameters": {
+                "meshes": ["fruit_mesh", "peeled_part"]
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "slice_in_half": {
+          "description": "Slices the orange in half and separates the pieces.",
+          "parameters": {
+            "separation_distance": {
+              "type": "float",
+              "default": 0.5,
+              "description": "The distance to separate the two halves."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "split_mesh_by_plane",
+              "parameters": {
+                "mesh": "input_mesh",
+                "axis": "x",
+                "position": 0.0
+              },
+              "outputs": ["half1_mesh", "half2_mesh"]
+            },
+            {
+              "operation": "translate_mesh",
+              "parameters": {
+                "mesh": "half2_mesh",
+                "vector": ["{separation_distance}", 0, 0]
+              },
+              "output": "moved_half"
+            },
+            {
+              "operation": "combine_meshes",
+              "parameters": {
+                "meshes": ["half1_mesh", "moved_half"]
+              },
+              "output": "result_mesh"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

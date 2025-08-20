@@ -1,0 +1,218 @@
+{
+  "porcupine": {
+    "name": "porcupine",
+    "description": "Editing configuration for porcupine models",
+    "operations": {
+      "common": {
+        "add": {
+          "description": "Add a new porcupine nearby to form a prickle (a group of porcupines)",
+          "parameters": {
+            "direction": {
+              "type": "string",
+              "default": "right",
+              "options": ["left", "right", "front", "back"],
+              "description": "Direction to add the new porcupine"
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "copy_mesh",
+              "parameters": {
+                "mesh": "input_mesh"
+              },
+              "output": "copied_mesh"
+            },
+            {
+              "operation": "get_bounds",
+              "parameters": {
+                "mesh": "input_mesh"
+              },
+              "output": "bounds"
+            },
+            {
+              "operation": "calculate_translation_vector",
+              "parameters": {
+                "direction": "{direction}",
+                "bounds": "bounds"
+              },
+              "output": "translation"
+            },
+            {
+              "operation": "translate_mesh",
+              "parameters": {
+                "mesh": "copied_mesh",
+                "vector": "translation"
+              },
+              "output": "translated_mesh"
+            },
+            {
+              "operation": "combine_meshes",
+              "parameters": {
+                "meshes": ["input_mesh", "translated_mesh"]
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "rotate": {
+          "description": "Rotate the porcupine model",
+          "parameters": {
+            "angle": {
+              "type": "float",
+              "default": 30.0,
+              "description": "Rotation angle (degrees) around its vertical axis"
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "rotate_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "angle": "{angle}",
+                "axis": [0, 1, 0]
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "translate": {
+          "description": "Translate the porcupine model (waddle around)",
+          "parameters": {
+            "vector": {
+              "type": "list",
+              "default": [0.5, 0, 0],
+              "description": "Translation vector (X, Y, Z)"
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "translate_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "vector": "{vector}"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "scale": {
+          "description": "Scale the porcupine model (from baby to adult)",
+          "parameters": {
+            "factor": {
+              "type": "float",
+              "default": 1.25,
+              "description": "Uniform scaling factor"
+            },
+            "center": {
+              "type": "string",
+              "default": "center",
+              "options": ["origin", "center"],
+              "description": "Scaling center"
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "calculate_scale_center",
+              "parameters": {
+                "mesh": "input_mesh",
+                "center_type": "{center}"
+              },
+              "output": "scale_center"
+            },
+            {
+              "operation": "scale_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "factor": "{factor}",
+                "center": "scale_center"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        }
+      },
+      "specific": {
+        "raise_quills": {
+          "description": "Makes the porcupine raise its sharp quills in a defensive posture.",
+          "parameters": {
+            "angle": {
+              "type": "float",
+              "default": 45.0,
+              "description": "The angle to raise the quills from their resting position."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "separate_extraction",
+              "parameters": {
+                "mesh": "input_mesh",
+                "part_name": "quills"
+              },
+              "outputs": ["quills_mesh", "body_mesh"]
+            },
+            {
+              "operation": "flare_out_from_surface",
+              "parameters": {
+                "mesh": "quills_mesh",
+                "angle": "{angle}"
+              },
+              "output": "raised_quills"
+            },
+            {
+              "operation": "combine_meshes",
+              "parameters": {
+                "meshes": ["body_mesh", "raised_quills"]
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "sniff_the_ground": {
+          "description": "Makes the porcupine lower its head to sniff the ground, as if foraging.",
+          "parameters": {
+            "dip_angle": {
+              "type": "float",
+              "default": 20.0,
+              "description": "The downward angle to tilt the head."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "separate_extraction",
+              "parameters": {
+                "mesh": "input_mesh",
+                "part_name": "head"
+              },
+              "outputs": ["head_mesh", "body_mesh"]
+            },
+            {
+              "operation": "calculate_pivot_point",
+              "parameters": {
+                "mesh": "head_mesh",
+                "pivot_type": "base_of_neck"
+              },
+              "output": "neck_pivot"
+            },
+            {
+              "operation": "rotate_mesh_around_pivot",
+              "parameters": {
+                "mesh": "head_mesh",
+                "pivot": "neck_pivot",
+                "angle": "{dip_angle}",
+                "axis": [1, 0, 0]
+              },
+              "output": "lowered_head"
+            },
+            {
+              "operation": "combine_meshes",
+              "parameters": {
+                "meshes": ["body_mesh", "lowered_head"]
+              },
+              "output": "result_mesh"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

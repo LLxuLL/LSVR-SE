@@ -1,0 +1,210 @@
+{
+  "clock": {
+    "name": "clock",
+    "description": "Clock model editing configuration. Assumes the clock face is on the XY plane, pointing towards the positive Z-axis, with hands initially at the 12 o'clock position.",
+    "operations": {
+      "common": {
+        "add": {
+          "description": "Add a new clock next to the current one.",
+          "parameters": {
+            "direction": {
+              "type": "string",
+              "default": "right",
+              "options": ["left", "right", "up", "down", "front", "back"],
+              "description": "Direction to add the new clock."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "copy_mesh",
+              "parameters": { "mesh": "input_mesh" },
+              "output": "copied_mesh"
+            },
+            {
+              "operation": "get_bounds",
+              "parameters": { "mesh": "input_mesh" },
+              "output": "bounds"
+            },
+            {
+              "operation": "calculate_translation_vector",
+              "parameters": {
+                "direction": "{direction}",
+                "bounds": "bounds"
+              },
+              "output": "translation"
+            },
+            {
+              "operation": "translate_mesh",
+              "parameters": {
+                "mesh": "copied_mesh",
+                "vector": "translation"
+              },
+              "output": "translated_mesh"
+            },
+            {
+              "operation": "combine_meshes",
+              "parameters": {
+                "meshes": ["input_mesh", "translated_mesh"]
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "translate": {
+          "description": "Translate (move) the clock model.",
+          "parameters": {
+            "vector": {
+              "type": "list_float",
+              "default": [0.0, 0.0, 0.0],
+              "description": "Translation vector [x, y, z]."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "translate_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "vector": "{vector}"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "rotate": {
+          "description": "Rotate the entire clock model around its depth axis (Z-axis).",
+          "parameters": {
+            "angle": {
+              "type": "float",
+              "default": 45.0,
+              "description": "Rotation angle in degrees."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "rotate_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "angle": "{angle}",
+                "axis": [0, 0, 1],
+                "center": "center"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "scale": {
+          "description": "Scale the clock model uniformly.",
+          "parameters": {
+            "factor": {
+              "type": "float",
+              "default": 1.2,
+              "description": "Scaling factor."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "calculate_scale_center",
+              "parameters": {
+                "mesh": "input_mesh",
+                "center_type": "center"
+              },
+              "output": "scale_center"
+            },
+            {
+              "operation": "scale_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "factor": "{factor}",
+                "center": "scale_center"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        }
+      },
+      "specific": {
+        "set_time": {
+          "description": "Sets the clock hands to a specific time.",
+          "parameters": {
+            "hour": {
+              "type": "int",
+              "default": 3,
+              "description": "Hour (1-12)."
+            },
+            "minute": {
+              "type": "int",
+              "default": 45,
+              "description": "Minute (0-59)."
+            },
+            "second": {
+              "type": "int",
+              "default": 15,
+              "description": "Second (0-59)."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "separate_by_part_names",
+              "parameters": {
+                "mesh": "input_mesh",
+                "part_names": ["face", "hour_hand", "minute_hand", "second_hand"]
+              },
+              "output": ["face_mesh", "hour_hand_mesh", "minute_hand_mesh", "second_hand_mesh"]
+            },
+            {
+              "operation": "calculate_clock_hand_angles",
+              "parameters": {
+                "hour": "{hour}",
+                "minute": "{minute}",
+                "second": "{second}"
+              },
+              "output": ["hour_angle", "minute_angle", "second_angle"]
+            },
+            {
+              "operation": "get_rotation_center",
+              "parameters": { "mesh": "face_mesh" },
+              "output": "pivot_center"
+            },
+            {
+              "operation": "rotate_mesh",
+              "parameters": {
+                "mesh": "hour_hand_mesh",
+                "angle": "hour_angle",
+                "axis": [0, 0, 1],
+                "center": "pivot_center"
+              },
+              "output": "rotated_hour_hand"
+            },
+            {
+              "operation": "rotate_mesh",
+              "parameters": {
+                "mesh": "minute_hand_mesh",
+                "angle": "minute_angle",
+                "axis": [0, 0, 1],
+                "center": "pivot_center"
+              },
+              "output": "rotated_minute_hand"
+            },
+            {
+              "operation": "rotate_mesh",
+              "parameters": {
+                "mesh": "second_hand_mesh",
+                "angle": "second_angle",
+                "axis": [0, 0, 1],
+                "center": "pivot_center"
+              },
+              "output": "rotated_second_hand"
+            },
+            {
+              "operation": "combine_meshes",
+              "parameters": {
+                "meshes": ["face_mesh", "rotated_hour_hand", "rotated_minute_hand", "rotated_second_hand"]
+              },
+              "output": "result_mesh"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

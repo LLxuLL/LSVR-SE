@@ -1,0 +1,193 @@
+{
+  "chimpanzee": {
+    "name": "chimpanzee",
+    "description": "Chimpanzee model editing configuration. The model is assumed to be standing upright, with its height aligned with the Y-axis.",
+    "operations": {
+      "common": {
+        "add": {
+          "description": "Add a new chimpanzee next to the current one.",
+          "parameters": {
+            "direction": {
+              "type": "string",
+              "default": "right",
+              "options": ["left", "right", "up", "down", "front", "back"],
+              "description": "Direction to add the new chimpanzee."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "copy_mesh",
+              "parameters": { "mesh": "input_mesh" },
+              "output": "copied_mesh"
+            },
+            {
+              "operation": "get_bounds",
+              "parameters": { "mesh": "input_mesh" },
+              "output": "bounds"
+            },
+            {
+              "operation": "calculate_translation_vector",
+              "parameters": {
+                "direction": "{direction}",
+                "bounds": "bounds"
+              },
+              "output": "translation"
+            },
+            {
+              "operation": "translate_mesh",
+              "parameters": {
+                "mesh": "copied_mesh",
+                "vector": "translation"
+              },
+              "output": "translated_mesh"
+            },
+            {
+              "operation": "combine_meshes",
+              "parameters": {
+                "meshes": ["input_mesh", "translated_mesh"]
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "translate": {
+          "description": "Translate (move) the model.",
+          "parameters": {
+            "vector": {
+              "type": "list_float",
+              "default": [0.0, 0.0, 0.0],
+              "description": "Translation vector [x, y, z]."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "translate_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "vector": "{vector}"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "rotate": {
+          "description": "Rotate the model around its vertical axis (Y-axis).",
+          "parameters": {
+            "angle": {
+              "type": "float",
+              "default": 90.0,
+              "description": "Rotation angle in degrees."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "rotate_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "angle": "{angle}",
+                "axis": [0, 1, 0],
+                "center": "center"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "scale": {
+          "description": "Scale the model uniformly.",
+          "parameters": {
+            "factor": {
+              "type": "float",
+              "default": 1.5,
+              "description": "Scaling factor (e.g., 1.5 is 150%)."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "calculate_scale_center",
+              "parameters": {
+                "mesh": "input_mesh",
+                "center_type": "center"
+              },
+              "output": "scale_center"
+            },
+            {
+              "operation": "scale_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "factor": "{factor}",
+                "center": "scale_center"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        }
+      },
+      "specific": {
+        "lie_down": {
+          "description": "Make the chimpanzee lie down on its back or front.",
+          "parameters": {
+            "direction": {
+              "type": "string",
+              "default": "back",
+              "options": ["back", "front"],
+              "description": "Direction to lie down, determines rotation."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "calculate_pivot_point",
+              "parameters": {
+                "mesh": "input_mesh",
+                "pivot_type": "bottom_center"
+              },
+              "output": "pivot_point"
+            },
+            {
+              "operation": "adjust_angle_by_direction",
+              "parameters": {
+                "angle": 90.0,
+                "direction": "{direction}",
+                "mapping": { "back": 90.0, "front": -90.0 }
+              },
+              "output": "final_angle"
+            },
+            {
+              "operation": "rotate_mesh_around_pivot",
+              "parameters": {
+                "mesh": "input_mesh",
+                "angle": "final_angle",
+                "axis": [1, 0, 0],
+                "pivot": "pivot_point"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "stand_up": {
+          "description": "Make the chimpanzee stand up from a lying position.",
+          "parameters": {},
+          "atomic_operations": [
+            {
+              "operation": "calculate_pivot_point",
+              "parameters": {
+                "mesh": "input_mesh",
+                "pivot_type": "bottom_center"
+              },
+              "output": "pivot_point"
+            },
+            {
+              "operation": "rotate_mesh_around_pivot",
+              "parameters": {
+                "mesh": "input_mesh",
+                "angle": -90.0,
+                "axis": [1, 0, 0],
+                "pivot": "pivot_point"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

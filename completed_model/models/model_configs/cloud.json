@@ -1,0 +1,214 @@
+{
+  "cloud": {
+    "name": "cloud",
+    "description": "Cloud model editing configuration. The model is an amorphous, volumetric shape.",
+    "operations": {
+      "common": {
+        "add": {
+          "description": "Add a new cloud formation next to the current one.",
+          "parameters": {
+            "direction": {
+              "type": "string",
+              "default": "right",
+              "options": ["left", "right", "up", "down", "front", "back"],
+              "description": "Direction to add the new cloud."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "copy_mesh",
+              "parameters": { "mesh": "input_mesh" },
+              "output": "copied_mesh"
+            },
+            {
+              "operation": "get_bounds",
+              "parameters": { "mesh": "input_mesh" },
+              "output": "bounds"
+            },
+            {
+              "operation": "calculate_translation_vector",
+              "parameters": {
+                "direction": "{direction}",
+                "bounds": "bounds"
+              },
+              "output": "translation"
+            },
+            {
+              "operation": "translate_mesh",
+              "parameters": {
+                "mesh": "copied_mesh",
+                "vector": "translation"
+              },
+              "output": "translated_mesh"
+            },
+            {
+              "operation": "combine_meshes",
+              "parameters": {
+                "meshes": ["input_mesh", "translated_mesh"]
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "translate": {
+          "description": "Translate (move) the cloud.",
+          "parameters": {
+            "vector": {
+              "type": "list_float",
+              "default": [0.0, 0.0, 0.0],
+              "description": "Translation vector [x, y, z]."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "translate_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "vector": "{vector}"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "rotate": {
+          "description": "Rotate the cloud around its center.",
+          "parameters": {
+            "angle": {
+              "type": "float",
+              "default": 30.0,
+              "description": "Rotation angle in degrees."
+            },
+            "axis": {
+              "type": "list_float",
+              "default": [0, 1, 0],
+              "description": "Axis of rotation [x, y, z]."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "rotate_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "angle": "{angle}",
+                "axis": "{axis}",
+                "center": "center"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "scale": {
+          "description": "Scale the cloud to make it larger or smaller.",
+          "parameters": {
+            "factor": {
+              "type": "float",
+              "default": 1.5,
+              "description": "Uniform scaling factor."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "calculate_scale_center",
+              "parameters": {
+                "mesh": "input_mesh",
+                "center_type": "center"
+              },
+              "output": "scale_center"
+            },
+            {
+              "operation": "scale_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "factor": "{factor}",
+                "center": "scale_center"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        }
+      },
+      "specific": {
+        "morph": {
+          "description": "Morphs the cloud's shape to be more puffy or more dense.",
+          "parameters": {
+            "intensity": {
+              "type": "float",
+              "default": 0.5,
+              "description": "Morphing intensity. Positive values make it puffier, negative values make it denser/smoother."
+            },
+            "seed": {
+              "type": "int",
+              "default": 42,
+              "description": "Seed for random perturbation to ensure repeatable results."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "apply_vertex_noise",
+              "parameters": {
+                "mesh": "input_mesh",
+                "intensity": "{intensity}",
+                "seed": "{seed}"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "add_wisp": {
+          "description": "Adds a smaller wisp of cloud nearby.",
+          "parameters": {
+            "size": {
+              "type": "float",
+              "default": 0.3,
+              "description": "Size of the wisp relative to the main cloud."
+            },
+            "offset": {
+              "type": "list_float",
+              "default": [1.0, 0.5, 0.0],
+              "description": "Positional offset of the wisp from the main cloud's center."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "copy_mesh",
+              "parameters": { "mesh": "input_mesh" },
+              "output": "wisp_base_mesh"
+            },
+            {
+              "operation": "calculate_scale_center",
+              "parameters": {
+                "mesh": "wisp_base_mesh",
+                "center_type": "center"
+              },
+              "output": "wisp_center"
+            },
+            {
+              "operation": "scale_mesh",
+              "parameters": {
+                "mesh": "wisp_base_mesh",
+                "factor": "{size}",
+                "center": "wisp_center"
+              },
+              "output": "scaled_wisp_mesh"
+            },
+            {
+              "operation": "translate_mesh",
+              "parameters": {
+                "mesh": "scaled_wisp_mesh",
+                "vector": "{offset}"
+              },
+              "output": "translated_wisp_mesh"
+            },
+            {
+              "operation": "combine_meshes",
+              "parameters": {
+                "meshes": ["input_mesh", "translated_wisp_mesh"]
+              },
+              "output": "result_mesh"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

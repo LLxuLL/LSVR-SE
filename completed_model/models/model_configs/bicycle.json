@@ -1,0 +1,371 @@
+{
+    "bicycle": {
+        "name": "bicycle",
+        "description": "Bicycle model editing configuration",
+        "operations": {
+            "common": {
+                "add": {
+                    "description": "Add a new bicycle",
+                    "parameters": {
+                        "direction": {
+                            "type": "string",
+                            "default": "right",
+                            "options": [
+                                "left",
+                                "right",
+                                "up",
+                                "down",
+                                "front",
+                                "back"
+                            ],
+                            "description": "Add directions"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "copy_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh"
+                            },
+                            "output": "copied_mesh"
+                        },
+                        {
+                            "operation": "get_bounds",
+                            "parameters": {
+                                "mesh": "input_mesh"
+                            },
+                            "output": "bounds"
+                        },
+                        {
+                            "operation": "calculate_translation_vector",
+                            "parameters": {
+                                "direction": "{direction}",
+                                "bounds": "bounds"
+                            },
+                            "output": "translation"
+                        },
+                        {
+                            "operation": "translate_mesh",
+                            "parameters": {
+                                "mesh": "copied_mesh",
+                                "vector": "translation"
+                            },
+                            "output": "translated_mesh"
+                        },
+                        {
+                            "operation": "combine_meshes",
+                            "parameters": {
+                                "meshes": [
+                                    "input_mesh",
+                                    "translated_mesh"
+                                ]
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "rotate": {
+                    "description": "Rotating model",
+                    "parameters": {
+                        "angle": {
+                            "type": "float",
+                            "default": 90.0,
+                            "description": "Rotation angle (degrees)"
+                        },
+                        "axis": {
+                            "type": "string",
+                            "default": "y",
+                            "options": [
+                                "x",
+                                "y",
+                                "z"
+                            ],
+                            "description": "Rotation axis"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "rotate_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "angle": "{angle}",
+                                "axis": "{axis}"
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "translate": {
+                    "description": "Translation model",
+                    "parameters": {
+                        "vector": {
+                            "type": "array",
+                            "default": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "description": "Translation vector"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "translate_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "vector": "{vector}"
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "scale": {
+                    "description": "Scaling model",
+                    "parameters": {
+                        "factor": {
+                            "type": "float",
+                            "default": 1.0,
+                            "description": "Scaling factor"
+                        },
+                        "center": {
+                            "type": "string",
+                            "default": "center",
+                            "options": [
+                                "origin",
+                                "center"
+                            ],
+                            "description": "Zoom Center"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "calculate_scale_center",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "center_type": "{center}"
+                            },
+                            "output": "scale_center"
+                        },
+                        {
+                            "operation": "scale_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "factor": "{factor}",
+                                "center": "scale_center"
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                }
+            },
+            "specific": {
+                "spin_wheels": {
+                    "description": "Spin the bicycle's wheels.",
+                    "parameters": {
+                        "angle": {
+                            "type": "float",
+                            "default": 360.0,
+                            "description": "The angle to spin the wheels."
+                        },
+                        "wheel": {
+                            "type": "string",
+                            "default": "both",
+                            "options": [ "front", "rear", "both" ],
+                            "description": "Which wheel to spin."
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "separate_extraction",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "region": "{wheel}_wheel"
+                            },
+                            "output": [ "frame_mesh", "wheel_mesh" ]
+                        },
+                        {
+                            "operation": "calculate_pivot_point",
+                            "parameters": {
+                                "mesh": "wheel_mesh",
+                                "pivot_type": "center"
+                            },
+                            "output": "pivot_point"
+                        },
+                        {
+                            "operation": "calculate_rotation_axis",
+                            "parameters": {
+                                "mesh": "wheel_mesh",
+                                "axis_type": "axle_axis"
+                            },
+                            "output": "rotation_axis"
+                        },
+                        {
+                            "operation": "rotate_mesh_around_pivot",
+                            "parameters": {
+                                "mesh": "wheel_mesh",
+                                "angle": "{angle}",
+                                "pivot": "pivot_point",
+                                "axis": "rotation_axis"
+                            },
+                            "output": "spun_wheel"
+                        },
+                        {
+                            "operation": "combine_meshes",
+                            "parameters": {
+                                "meshes": [ "frame_mesh", "spun_wheel" ]
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "turn_handlebars": {
+                    "description": "Turn the handlebars and front wheel.",
+                    "parameters": {
+                        "angle": {
+                            "type": "float",
+                            "default": 30.0,
+                            "description": "Angle to turn the handlebars."
+                        },
+                        "direction": {
+                            "type": "string",
+                            "default": "left",
+                            "options": [ "left", "right" ],
+                            "description": "Direction to turn."
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "separate_extraction",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "region": "front_assembly"
+                            },
+                            "output": [ "main_frame_mesh", "front_assembly_mesh" ]
+                        },
+                        {
+                            "operation": "calculate_pivot_point",
+                            "parameters": {
+                                "mesh": "front_assembly_mesh",
+                                "pivot_type": "steering_column"
+                            },
+                            "output": "pivot_point"
+                        },
+                        {
+                            "operation": "calculate_rotation_axis",
+                            "parameters": {
+                                "mesh": "front_assembly_mesh",
+                                "axis_type": "steering_axis"
+                            },
+                            "output": "rotation_axis"
+                        },
+                        {
+                            "operation": "adjust_angle_by_direction",
+                            "parameters": {
+                                "angle": "{angle}",
+                                "direction": "{direction}"
+                            },
+                            "output": "final_angle"
+                        },
+                        {
+                            "operation": "rotate_mesh_around_pivot",
+                            "parameters": {
+                                "mesh": "front_assembly_mesh",
+                                "angle": "final_angle",
+                                "pivot": "pivot_point",
+                                "axis": "rotation_axis"
+                            },
+                            "output": "turned_assembly"
+                        },
+                        {
+                            "operation": "combine_meshes",
+                            "parameters": {
+                                "meshes": [ "main_frame_mesh", "turned_assembly" ]
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "rotate_pedals": {
+                    "description": "Rotate the pedals.",
+                    "parameters": {
+                        "angle": {
+                            "type": "float",
+                            "default": 180.0,
+                            "description": "Angle to rotate the pedals."
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "separate_extraction",
+                            "parameters": { "mesh": "input_mesh", "region": "crankset" },
+                            "output": [ "frame_mesh", "crankset_mesh" ]
+                        },
+                        {
+                            "operation": "calculate_pivot_point",
+                            "parameters": { "mesh": "crankset_mesh", "pivot_type": "bottom_bracket" },
+                            "output": "pivot_point"
+                        },
+                        {
+                            "operation": "calculate_rotation_axis",
+                            "parameters": { "mesh": "crankset_mesh", "axis_type": "axle_axis" },
+                            "output": "rotation_axis"
+                        },
+                        {
+                            "operation": "rotate_mesh_around_pivot",
+                            "parameters": { "mesh": "crankset_mesh", "angle": "{angle}", "pivot": "pivot_point", "axis": "rotation_axis" },
+                            "output": "rotated_pedals"
+                        },
+                        {
+                            "operation": "combine_meshes",
+                            "parameters": { "meshes": [ "frame_mesh", "rotated_pedals" ] },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "use_kickstand": {
+                    "description": "Deploy or retract the kickstand.",
+                    "parameters": {
+                        "state": {
+                            "type": "string",
+                            "default": "deploy",
+                            "options": [ "deploy", "retract" ],
+                            "description": "Action for the kickstand."
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "separate_extraction",
+                            "parameters": { "mesh": "input_mesh", "region": "kickstand" },
+                            "output": [ "bicycle_mesh", "kickstand_mesh" ]
+                        },
+                        {
+                            "operation": "calculate_pivot_point",
+                            "parameters": { "mesh": "kickstand_mesh", "pivot_type": "kickstand_hinge" },
+                            "output": "pivot_point"
+                        },
+                        {
+                            "operation": "calculate_rotation_axis",
+                            "parameters": { "mesh": "kickstand_mesh", "axis_type": "hinge_axis" },
+                            "output": "rotation_axis"
+                        },
+                        {
+                            "operation": "set_state_value",
+                            "parameters": { "state": "{state}", "on_value": -75.0, "off_value": 0.0 },
+                            "output": "final_angle"
+                        },
+                        {
+                            "operation": "rotate_mesh_around_pivot",
+                            "parameters": { "mesh": "kickstand_mesh", "angle": "final_angle", "pivot": "pivot_point", "axis": "rotation_axis" },
+                            "output": "moved_kickstand"
+                        },
+                        {
+                            "operation": "combine_meshes",
+                            "parameters": { "meshes": [ "bicycle_mesh", "moved_kickstand" ] },
+                            "output": "result_mesh"
+                        }
+                    ]
+                }
+            }
+        }
+    }
+}

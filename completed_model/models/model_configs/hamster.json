@@ -1,0 +1,219 @@
+{
+  "hamster": {
+    "name": "hamster",
+    "description": "Editing configuration for hamster models",
+    "operations": {
+      "common": {
+        "add": {
+          "description": "Add a new hamster nearby",
+          "parameters": {
+            "direction": {
+              "type": "string",
+              "default": "right",
+              "options": ["left", "right", "up", "down", "front", "back"],
+              "description": "Direction to add the new hamster"
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "copy_mesh",
+              "parameters": {
+                "mesh": "input_mesh"
+              },
+              "output": "copied_mesh"
+            },
+            {
+              "operation": "get_bounds",
+              "parameters": {
+                "mesh": "input_mesh"
+              },
+              "output": "bounds"
+            },
+            {
+              "operation": "calculate_translation_vector",
+              "parameters": {
+                "direction": "{direction}",
+                "bounds": "bounds"
+              },
+              "output": "translation"
+            },
+            {
+              "operation": "translate_mesh",
+              "parameters": {
+                "mesh": "copied_mesh",
+                "vector": "translation"
+              },
+              "output": "translated_mesh"
+            },
+            {
+              "operation": "combine_meshes",
+              "parameters": {
+                "meshes": ["input_mesh", "translated_mesh"]
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "rotate": {
+          "description": "Rotate the hamster model",
+          "parameters": {
+            "angle": {
+              "type": "float",
+              "default": 90.0,
+              "description": "Rotation angle (degrees)"
+            },
+            "axis": {
+              "type": "list",
+              "default": [0, 1, 0],
+              "description": "Rotation axis (X, Y, Z)"
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "rotate_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "angle": "{angle}",
+                "axis": "{axis}"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "translate": {
+          "description": "Translate the hamster model",
+          "parameters": {
+            "vector": {
+              "type": "list",
+              "default": [2, 0, 0],
+              "description": "Translation vector (X, Y, Z)"
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "translate_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "vector": "{vector}"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "scale": {
+          "description": "Scale the hamster model uniformly",
+          "parameters": {
+            "factor": {
+              "type": "float",
+              "default": 1.5,
+              "description": "Scaling factor"
+            },
+            "center": {
+              "type": "string",
+              "default": "center",
+              "options": ["origin", "center"],
+              "description": "Scaling center"
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "calculate_scale_center",
+              "parameters": {
+                "mesh": "input_mesh",
+                "center_type": "{center}"
+              },
+              "output": "scale_center"
+            },
+            {
+              "operation": "scale_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "factor": "{factor}",
+                "center": "scale_center"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        }
+      },
+      "specific": {
+        "stuff_cheeks": {
+          "description": "Makes the hamster puff up its cheeks, as if storing food, making it rounder.",
+          "parameters": {
+            "puff_factor": {
+              "type": "float",
+              "default": 1.3,
+              "description": "How much to puff the cheeks (e.g., 1.3 for 30% wider/deeper)"
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "calculate_scale_center",
+              "parameters": {
+                "mesh": "input_mesh",
+                "center_type": "origin"
+              },
+              "output": "scale_center"
+            },
+            {
+              "operation": "calculate_non_uniform_scale_vector",
+              "parameters": {
+                "x_factor": "{puff_factor}",
+                "y_factor": 1.05,
+                "z_factor": "{puff_factor}"
+              },
+              "output": "scale_vector"
+            },
+            {
+              "operation": "scale_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "factor": "scale_vector",
+                "center": "scale_center"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "curl_up": {
+          "description": "Makes the hamster curl up into a ball, as if sleeping.",
+          "parameters": {
+            "curl_factor": {
+              "type": "float",
+              "default": 0.7,
+              "description": "Vertical squash factor to make it more ball-like (e.g., 0.7 makes it 70% of its original height)"
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "calculate_scale_center",
+              "parameters": {
+                "mesh": "input_mesh",
+                "center_type": "origin"
+              },
+              "output": "scale_center"
+            },
+            {
+              "operation": "calculate_non_uniform_scale_vector",
+              "parameters": {
+                "x_factor": 1.1,
+                "y_factor": "{curl_factor}",
+                "z_factor": 1.1
+              },
+              "output": "scale_vector"
+            },
+            {
+              "operation": "scale_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "factor": "scale_vector",
+                "center": "scale_center"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

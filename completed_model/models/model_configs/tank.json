@@ -1,0 +1,240 @@
+{
+    "tank": {
+        "name": "tank",
+        "description": "Editing configuration for the Tank model",
+        "operations": {
+            "common": {
+                "add": {
+                    "description": "Deploy a new tank nearby",
+                    "parameters": {
+                        "direction": {
+                            "type": "string",
+                            "default": "right",
+                            "options": ["left", "right", "front", "back"],
+                            "description": "Direction to add the new tank"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "copy_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh"
+                            },
+                            "output": "copied_mesh"
+                        },
+                        {
+                            "operation": "get_bounds",
+                            "parameters": {
+                                "mesh": "input_mesh"
+                            },
+                            "output": "bounds"
+                        },
+                        {
+                            "operation": "calculate_translation_vector",
+                            "parameters": {
+                                "direction": "{direction}",
+                                "bounds": "bounds"
+                            },
+                            "output": "translation"
+                        },
+                        {
+                            "operation": "translate_mesh",
+                            "parameters": {
+                                "mesh": "copied_mesh",
+                                "vector": "translation"
+                            },
+                            "output": "translated_mesh"
+                        },
+                        {
+                            "operation": "combine_meshes",
+                            "parameters": {
+                                "meshes": ["input_mesh", "translated_mesh"]
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "rotate": {
+                    "description": "Rotate the entire tank hull",
+                    "parameters": {
+                        "angle": {
+                            "type": "float",
+                            "default": 30.0,
+                            "description": "Rotation angle (in degrees)"
+                        },
+                        "axis": {
+                            "type": "vector3d",
+                            "default": [0, 1, 0],
+                            "description": "Axis of rotation (Y-axis)"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "rotate_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "angle": "{angle}",
+                                "axis": "{axis}"
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "scale": {
+                    "description": "Scale the entire tank model",
+                    "parameters": {
+                        "factor": {
+                            "type": "float",
+                            "default": 1.2,
+                            "description": "Scaling factor"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "calculate_scale_center",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "center_type": "origin"
+                            },
+                            "output": "scale_center"
+                        },
+                        {
+                            "operation": "scale_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "factor": "{factor}",
+                                "center": "scale_center"
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "translate": {
+                    "description": "Move the entire tank's position",
+                    "parameters": {
+                        "vector": {
+                            "type": "vector3d",
+                            "default": [10, 0, 0],
+                            "description": "Translation vector"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "translate_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "vector": "{vector}"
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                }
+            },
+            "specific": {
+                "rotate_turret": {
+                    "description": "Rotate the turret horizontally, independent of the hull, for aiming",
+                    "parameters": {
+                        "angle": {
+                            "type": "float",
+                            "default": 90.0,
+                            "description": "Horizontal rotation angle of the turret. Positive values for right, negative for left"
+                        },
+                        "turret_ratio": {
+                            "type": "float",
+                            "default": 0.6,
+                            "description": "The starting split ratio of the turret in the total height, used to separate the hull and turret"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "split_mesh_by_axis",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "axis": "Y",
+                                "split_point_ratio": "{turret_ratio}"
+                            },
+                            "output": ["hull", "turret"]
+                        },
+                        {
+                            "operation": "calculate_pivot_point",
+                            "parameters": {
+                                "mesh": "turret",
+                                "pivot_type": "center"
+                            },
+                            "output": "pivot_point"
+                        },
+                        {
+                            "operation": "rotate_mesh_around_pivot",
+                            "parameters": {
+                                "mesh": "turret",
+                                "angle": "{angle}",
+                                "axis": [0, 1, 0],
+                                "pivot": "pivot_point"
+                            },
+                            "output": "rotated_turret"
+                        },
+                        {
+                            "operation": "combine_meshes",
+                            "parameters": {
+                                "meshes": ["hull", "rotated_turret"]
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "elevate_gun": {
+                    "description": "Adjust the elevation angle of the main gun to engage targets at different ranges",
+                    "parameters": {
+                        "angle": {
+                            "type": "float",
+                            "default": -15.0,
+                            "description": "Vertical elevation angle of the gun. Positive for up, negative for down"
+                        },
+                        "turret_ratio": {
+                            "type": "float",
+                            "default": 0.6,
+                            "description": "Ratio used to separate the turret from the hull"
+                        },
+                        "barrel_split_ratio": {
+                            "type": "float",
+                            "default": 0.5,
+                            "description": "Split ratio along the turret's length to separate the gun barrel from the turret body"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "split_mesh_by_axis",
+                            "parameters": { "mesh": "input_mesh", "axis": "Y", "split_point_ratio": "{turret_ratio}" },
+                            "output": ["hull", "turret_assembly"]
+                        },
+                        {
+                            "operation": "split_mesh_by_axis",
+                            "parameters": { "mesh": "turret_assembly", "axis": "X", "split_point_ratio_from_front": "{barrel_split_ratio}" },
+                            "output": ["gun_barrel", "turret_body"]
+                        },
+                        {
+                            "operation": "calculate_pivot_point",
+                            "parameters": { "mesh": "gun_barrel", "pivot_type": "edge", "edge": "back" },
+                            "output": "pivot_point"
+                        },
+                        {
+                            "operation": "rotate_mesh_around_pivot",
+                            "parameters": {
+                                "mesh": "gun_barrel",
+                                "angle": "{angle}",
+                                "axis": [0, 0, 1],
+                                "pivot": "pivot_point"
+                            },
+                            "output": "elevated_gun"
+                        },
+                        {
+                            "operation": "combine_meshes",
+                            "parameters": { "meshes": ["hull", "turret_body", "elevated_gun"] },
+                            "output": "result_mesh"
+                        }
+                    ]
+                }
+            }
+        }
+    }
+}

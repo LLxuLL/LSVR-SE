@@ -1,0 +1,258 @@
+{
+    "skyscraper": {
+        "name": "skyscraper",
+        "description": "摩天大楼模型的编辑配置",
+        "operations": {
+            "common": {
+                "add": {
+                    "description": "在指定方向上建造一座新的摩天大楼",
+                    "parameters": {
+                        "direction": {
+                            "type": "string",
+                            "default": "right",
+                            "options": ["left", "right", "front", "back"],
+                            "description": "添加新建筑的方向"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "copy_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh"
+                            },
+                            "output": "copied_mesh"
+                        },
+                        {
+                            "operation": "get_bounds",
+                            "parameters": {
+                                "mesh": "input_mesh"
+                            },
+                            "output": "bounds"
+                        },
+                        {
+                            "operation": "calculate_translation_vector",
+                            "parameters": {
+                                "direction": "{direction}",
+                                "bounds": "bounds"
+                            },
+                            "output": "translation"
+                        },
+                        {
+                            "operation": "translate_mesh",
+                            "parameters": {
+                                "mesh": "copied_mesh",
+                                "vector": "translation"
+                            },
+                            "output": "translated_mesh"
+                        },
+                        {
+                            "operation": "combine_meshes",
+                            "parameters": {
+                                "meshes": ["input_mesh", "translated_mesh"]
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "rotate": {
+                    "description": "围绕中心轴旋转整个摩天大楼",
+                    "parameters": {
+                        "angle": {
+                            "type": "float",
+                            "default": 45.0,
+                            "description": "旋转角度 (度)"
+                        },
+                        "axis": {
+                            "type": "vector3d",
+                            "default": [0, 1, 0],
+                            "description": "旋转轴 (通常是垂直的Y轴)"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "rotate_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "angle": "{angle}",
+                                "axis": "{axis}"
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "scale": {
+                    "description": "缩放整个摩天大楼模型",
+                    "parameters": {
+                        "factor": {
+                            "type": "float",
+                            "default": 1.1,
+                            "description": "缩放因子"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "calculate_scale_center",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "center_type": "center"
+                            },
+                            "output": "scale_center"
+                        },
+                        {
+                            "operation": "scale_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "factor": "{factor}",
+                                "center": "scale_center"
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "translate": {
+                    "description": "平移整个摩天大楼模型",
+                    "parameters": {
+                        "vector": {
+                            "type": "vector3d",
+                            "default": [50, 0, 0],
+                            "description": "平移向量"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "translate_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "vector": "{vector}"
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                }
+            },
+            "specific": {
+                "add_floors": {
+                    "description": "通过拉伸建筑物的中间部分来增加楼层和高度",
+                    "parameters": {
+                        "height_increase_factor": {
+                            "type": "float",
+                            "default": 1.5,
+                            "description": "中部楼层高度增加的倍数"
+                        },
+                        "mid_section_ratio": {
+                            "type": "float",
+                            "default": 0.8,
+                            "description": "被视为“中间楼层”并进行拉伸的部分所占的比例（从下往上）"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "split_mesh_by_axis",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "axis": "Y",
+                                "split_point_ratio": "{mid_section_ratio}"
+                            },
+                            "output": ["mid_and_base_section", "top_section"]
+                        },
+                        {
+                            "operation": "get_bounds",
+                            "parameters": { "mesh": "top_section" },
+                            "output": "top_bounds"
+                        },
+                        {
+                            "operation": "scale_mesh",
+                            "parameters": {
+                                "mesh": "mid_and_base_section",
+                                "factor": [1.0, "{height_increase_factor}", 1.0],
+                                "center": [0, 0, 0]
+                            },
+                            "output": "stretched_section"
+                        },
+                        {
+                            "operation": "get_bounds",
+                            "parameters": { "mesh": "stretched_section" },
+                            "output": "stretched_bounds"
+                        },
+                        {
+                            "operation": "translate_mesh",
+                            "parameters": {
+                                "mesh": "top_section",
+                                "vector": [0, "stretched_bounds.max[1] - top_bounds.min[1]", 0]
+                            },
+                            "output": "repositioned_top"
+                        },
+                        {
+                            "operation": "combine_meshes",
+                            "parameters": {
+                                "meshes": ["stretched_section", "repositioned_top"]
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "add_spire": {
+                    "description": "在摩天大楼的顶部添加一个尖顶结构",
+                    "parameters": {
+                        "spire_height_factor": {
+                            "type": "float",
+                            "default": 0.3,
+                            "description": "尖顶高度与建筑宽度的比例"
+                        },
+                        "taper_factor": {
+                            "type": "float",
+                            "default": 0.1,
+                            "description": "尖顶的锥化程度，越小越尖"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                           "operation": "split_mesh_by_axis",
+                           "parameters": { "mesh": "input_mesh", "axis": "Y", "split_point_ratio": 0.98 },
+                           "output": ["main_building", "roof_section"]
+                        },
+                        {
+                           "operation": "copy_mesh",
+                           "parameters": { "mesh": "roof_section" },
+                           "output": "spire"
+                        },
+                        {
+                           "operation": "get_bounds",
+                           "parameters": { "mesh": "input_mesh" },
+                           "output": "building_bounds"
+                        },
+                        {
+                            "operation": "calculate_scale_center",
+                            "parameters": { "mesh": "spire", "center_type": "bottom" },
+                            "output": "spire_base_center"
+                        },
+                        {
+                           "operation": "scale_mesh",
+                           "parameters": {
+                               "mesh": "spire",
+                               "factor": ["{taper_factor}", "{spire_height_factor} * (building_bounds.max[0] - building_bounds.min[0]) / (building_bounds.max[1] - building_bounds.min[1])", "{taper_factor}"],
+                               "center": "spire_base_center"
+                           },
+                           "output": "scaled_spire"
+                        },
+                        {
+                           "operation": "translate_mesh",
+                           "parameters": {
+                               "mesh": "scaled_spire",
+                               "vector": [0, "building_bounds.max[1] - spire_base_center[1]", 0]
+                           },
+                           "output": "positioned_spire"
+                        },
+                        {
+                           "operation": "combine_meshes",
+                           "parameters": {
+                               "meshes": ["input_mesh", "positioned_spire"]
+                           },
+                           "output": "result_mesh"
+                        }
+                    ]
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,276 @@
+{
+    "bridge": {
+        "name": "bridge",
+        "description": "Bridge model editing configuration",
+        "operations": {
+            "common": {
+                "add": {
+                    "description": "Add a new bridge",
+                    "parameters": {
+                        "direction": {
+                            "type": "string",
+                            "default": "right",
+                            "options": [
+                                "left",
+                                "right",
+                                "up",
+                                "down",
+                                "front",
+                                "back"
+                            ],
+                            "description": "Add directions"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "copy_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh"
+                            },
+                            "output": "copied_mesh"
+                        },
+                        {
+                            "operation": "get_bounds",
+                            "parameters": {
+                                "mesh": "input_mesh"
+                            },
+                            "output": "bounds"
+                        },
+                        {
+                            "operation": "calculate_translation_vector",
+                            "parameters": {
+                                "direction": "{direction}",
+                                "bounds": "bounds"
+                            },
+                            "output": "translation"
+                        },
+                        {
+                            "operation": "translate_mesh",
+                            "parameters": {
+                                "mesh": "copied_mesh",
+                                "vector": "translation"
+                            },
+                            "output": "translated_mesh"
+                        },
+                        {
+                            "operation": "combine_meshes",
+                            "parameters": {
+                                "meshes": [
+                                    "input_mesh",
+                                    "translated_mesh"
+                                ]
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "rotate": {
+                    "description": "Rotating model",
+                    "parameters": {
+                        "angle": {
+                            "type": "float",
+                            "default": 90.0,
+                            "description": "Rotation angle (degrees)"
+                        },
+                        "axis": {
+                            "type": "string",
+                            "default": "y",
+                            "options": [
+                                "x",
+                                "y",
+                                "z"
+                            ],
+                            "description": "Rotation axis"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "rotate_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "angle": "{angle}",
+                                "axis": "{axis}"
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "translate": {
+                    "description": "Translation model",
+                    "parameters": {
+                        "vector": {
+                            "type": "array",
+                            "default": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "description": "Translation vector"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "translate_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "vector": "{vector}"
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "scale": {
+                    "description": "Scaling model",
+                    "parameters": {
+                        "factor": {
+                            "type": "float",
+                            "default": 1.0,
+                            "description": "Scaling factor"
+                        },
+                        "center": {
+                            "type": "string",
+                            "default": "center",
+                            "options": [
+                                "origin",
+                                "center"
+                            ],
+                            "description": "Zoom Center"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "calculate_scale_center",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "center_type": "{center}"
+                            },
+                            "output": "scale_center"
+                        },
+                        {
+                            "operation": "scale_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "factor": "{factor}",
+                                "center": "scale_center"
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                }
+            },
+            "specific": {
+                "raise_drawbridge": {
+                    "description": "Raise or lower the drawbridge deck.",
+                    "parameters": {
+                        "angle": {
+                            "type": "float",
+                            "default": -75.0,
+                            "description": "Angle to raise the deck. Negative values raise, positive values lower from the horizontal."
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "separate_extraction",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "region": "drawbridge_deck"
+                            },
+                            "output": [ "main_structure", "deck_mesh" ]
+                        },
+                        {
+                            "operation": "calculate_pivot_point",
+                            "parameters": {
+                                "mesh": "deck_mesh",
+                                "pivot_type": "hinge"
+                            },
+                            "output": "pivot_point"
+                        },
+                        {
+                            "operation": "calculate_rotation_axis",
+                            "parameters": {
+                                "mesh": "deck_mesh",
+                                "axis_type": "hinge_axis"
+                            },
+                            "output": "rotation_axis"
+                        },
+                        {
+                            "operation": "rotate_mesh_around_pivot",
+                            "parameters": {
+                                "mesh": "deck_mesh",
+                                "angle": "{angle}",
+                                "pivot": "pivot_point",
+                                "axis": "rotation_axis"
+                            },
+                            "output": "moved_deck"
+                        },
+                        {
+                            "operation": "combine_meshes",
+                            "parameters": {
+                                "meshes": [ "main_structure", "moved_deck" ]
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "collapse_center": {
+                    "description": "Simulate the collapse of the bridge's center span.",
+                    "parameters": {
+                        "drop_distance_ratio": {
+                            "type": "float",
+                            "default": 0.5,
+                            "description": "How far the center span drops, as a ratio of the bridge's height."
+                        },
+                        "tilt_angle": {
+                            "type": "float",
+                            "default": 15.0,
+                            "description": "Angle to tilt the collapsed section for a more realistic effect."
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "separate_extraction",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "region": "center_span"
+                            },
+                            "output": [ "side_supports", "center_span_mesh" ]
+                        },
+                        {
+                            "operation": "calculate_translation_vector",
+                            "parameters": {
+                                "direction": "down",
+                                "distance_ratio": "{drop_distance_ratio}",
+                                "mesh_bounds": "input_mesh"
+                            },
+                            "output": "drop_vector"
+                        },
+                        {
+                            "operation": "translate_mesh",
+                            "parameters": {
+                                "mesh": "center_span_mesh",
+                                "vector": "drop_vector"
+                            },
+                            "output": "dropped_span"
+                        },
+                        {
+                            "operation": "rotate_mesh",
+                            "parameters": {
+                                "mesh": "dropped_span",
+                                "angle": "{tilt_angle}",
+                                "axis": "x"
+                            },
+                            "output": "collapsed_span"
+                        },
+                        {
+                            "operation": "combine_meshes",
+                            "parameters": {
+                                "meshes": [ "side_supports", "collapsed_span" ]
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                }
+            }
+        }
+    }
+}

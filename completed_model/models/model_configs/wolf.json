@@ -1,0 +1,266 @@
+{
+  "wolf": {
+    "name": "wolf",
+    "description": "Wolf model editing configuration.",
+    "operations": {
+      "common": {
+        "add": {
+          "description": "Add a new wolf nearby.",
+          "parameters": {
+            "direction": {
+              "type": "string",
+              "default": "right",
+              "options": ["left", "right", "front", "back"],
+              "description": "Direction to add the new wolf."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "copy_mesh",
+              "parameters": {
+                "mesh": "input_mesh"
+              },
+              "output": "copied_mesh"
+            },
+            {
+              "operation": "get_bounds",
+              "parameters": {
+                "mesh": "input_mesh"
+              },
+              "output": "bounds"
+            },
+            {
+              "operation": "calculate_translation_vector",
+              "parameters": {
+                "direction": "{direction}",
+                "bounds": "bounds"
+              },
+              "output": "translation"
+            },
+            {
+              "operation": "translate_mesh",
+              "parameters": {
+                "mesh": "copied_mesh",
+                "vector": "translation"
+              },
+              "output": "translated_mesh"
+            },
+            {
+              "operation": "combine_meshes",
+              "parameters": {
+                "meshes": ["input_mesh", "translated_mesh"]
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "translate": {
+          "description": "Translate the wolf model.",
+          "parameters": {
+            "vector": {
+              "type": "list_float",
+              "default": [1.0, 0.0, 0.0],
+              "description": "Translation vector [x, y, z]."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "translate_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "vector": "{vector}"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "rotate": {
+          "description": "Rotate the wolf model.",
+          "parameters": {
+            "angle": {
+              "type": "float",
+              "default": 90.0,
+              "description": "Rotation angle in degrees."
+            },
+            "axis": {
+              "type": "list_float",
+              "default": [0.0, 1.0, 0.0],
+              "description": "Rotation axis vector [x, y, z]."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "rotate_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "angle": "{angle}",
+                "axis": "{axis}"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "scale": {
+          "description": "Scale the wolf model.",
+          "parameters": {
+            "factor": {
+              "type": "float",
+              "default": 1.5,
+              "description": "Scaling factor."
+            },
+            "center": {
+              "type": "string",
+              "default": "center",
+              "options": ["origin", "center"],
+              "description": "The center point for scaling."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "calculate_scale_center",
+              "parameters": {
+                "mesh": "input_mesh",
+                "center_type": "{center}"
+              },
+              "output": "scale_center"
+            },
+            {
+              "operation": "scale_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "factor": "{factor}",
+                "center": "scale_center"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        }
+      },
+      "specific": {
+        "howl": {
+          "description": "Pose the wolf to howl by tilting its head up.",
+          "parameters": {
+            "angle": {
+              "type": "float",
+              "default": 30.0,
+              "description": "The upward angle for the head tilt."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "separate_extraction",
+              "parameters": {
+                "mesh": "input_mesh",
+                "part_name": "head",
+                "ratio": 0.2
+              },
+              "output": ["wolf_body", "wolf_head"]
+            },
+            {
+              "operation": "calculate_pivot_point",
+              "parameters": {
+                "mesh": "wolf_head",
+                "pivot_type": "bottom_center"
+              },
+              "output": "neck_pivot"
+            },
+            {
+              "operation": "calculate_rotation_axis",
+              "parameters": {
+                "mesh": "wolf_head",
+                "edge": "right"
+              },
+              "output": "rotation_axis"
+            },
+            {
+              "operation": "rotate_mesh_around_pivot",
+              "parameters": {
+                "mesh": "wolf_head",
+                "pivot": "neck_pivot",
+                "axis": "rotation_axis",
+                "angle": "{angle}"
+              },
+              "output": "tilted_head"
+            },
+            {
+              "operation": "combine_meshes",
+              "parameters": {
+                "meshes": ["wolf_body", "tilted_head"]
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "wag_tail": {
+          "description": "Pose the wolf to wag its tail.",
+          "parameters": {
+            "angle": {
+              "type": "float",
+              "default": 25.0,
+              "description": "The side-to-side angle for the tail wag."
+            },
+            "direction": {
+              "type": "string",
+              "default": "right",
+              "options": ["left", "right"],
+              "description": "Direction of the tail wag."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "separate_extraction",
+              "parameters": {
+                "mesh": "input_mesh",
+                "part_name": "tail",
+                "ratio": 0.15
+              },
+              "output": ["wolf_body", "wolf_tail"]
+            },
+            {
+              "operation": "calculate_pivot_point",
+              "parameters": {
+                "mesh": "wolf_tail",
+                "pivot_type": "edge",
+                "edge": "front"
+              },
+              "output": "tail_base_pivot"
+            },
+            {
+              "operation": "calculate_rotation_axis",
+              "parameters": {
+                "mesh": "wolf_tail",
+                "edge": "up"
+              },
+              "output": "rotation_axis"
+            },
+            {
+              "operation": "adjust_angle_by_direction",
+              "parameters": {
+                "angle": "{angle}",
+                "direction": "{direction}"
+              },
+              "output": "final_angle"
+            },
+            {
+              "operation": "rotate_mesh_around_pivot",
+              "parameters": {
+                "mesh": "wolf_tail",
+                "pivot": "tail_base_pivot",
+                "axis": "rotation_axis",
+                "angle": "final_angle"
+              },
+              "output": "waggled_tail"
+            },
+            {
+              "operation": "combine_meshes",
+              "parameters": {
+                "meshes": ["wolf_body", "waggled_tail"]
+              },
+              "output": "result_mesh"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

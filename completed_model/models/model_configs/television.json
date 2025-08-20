@@ -1,0 +1,243 @@
+{
+    "television": {
+        "name": "television",
+        "description": "Editing configuration for the Television model",
+        "operations": {
+            "common": {
+                "add": {
+                    "description": "Place a new television nearby",
+                    "parameters": {
+                        "direction": {
+                            "type": "string",
+                            "default": "right",
+                            "options": ["left", "right", "front", "back"],
+                            "description": "Direction to add the new television"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "copy_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh"
+                            },
+                            "output": "copied_mesh"
+                        },
+                        {
+                            "operation": "get_bounds",
+                            "parameters": {
+                                "mesh": "input_mesh"
+                            },
+                            "output": "bounds"
+                        },
+                        {
+                            "operation": "calculate_translation_vector",
+                            "parameters": {
+                                "direction": "{direction}",
+                                "bounds": "bounds"
+                            },
+                            "output": "translation"
+                        },
+                        {
+                            "operation": "translate_mesh",
+                            "parameters": {
+                                "mesh": "copied_mesh",
+                                "vector": "translation"
+                            },
+                            "output": "translated_mesh"
+                        },
+                        {
+                            "operation": "combine_meshes",
+                            "parameters": {
+                                "meshes": ["input_mesh", "translated_mesh"]
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "rotate": {
+                    "description": "Rotate the entire television",
+                    "parameters": {
+                        "angle": {
+                            "type": "float",
+                            "default": 45.0,
+                            "description": "Rotation angle (in degrees)"
+                        },
+                        "axis": {
+                            "type": "vector3d",
+                            "default": [0, 1, 0],
+                            "description": "Axis of rotation (Y-axis)"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "rotate_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "angle": "{angle}",
+                                "axis": "{axis}"
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "scale": {
+                    "description": "Scale the entire television model uniformly",
+                    "parameters": {
+                        "factor": {
+                            "type": "float",
+                            "default": 1.2,
+                            "description": "Scaling factor"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "calculate_scale_center",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "center_type": "origin"
+                            },
+                            "output": "scale_center"
+                        },
+                        {
+                            "operation": "scale_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "factor": "{factor}",
+                                "center": "scale_center"
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "translate": {
+                    "description": "Move the entire television's position",
+                    "parameters": {
+                        "vector": {
+                            "type": "vector3d",
+                            "default": [2, 0, 0],
+                            "description": "Translation vector"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "translate_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "vector": "{vector}"
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                }
+            },
+            "specific": {
+                "swivel_screen": {
+                    "description": "Swivel the television screen on its stand.",
+                    "parameters": {
+                        "angle": {
+                            "type": "float",
+                            "default": 30.0,
+                            "description": "The horizontal angle to swivel the screen. Positive for right, negative for left."
+                        },
+                        "stand_height_ratio": {
+                            "type": "float",
+                            "default": 0.2,
+                            "description": "The height ratio of the stand, used to separate it from the screen assembly."
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "split_mesh_by_axis",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "axis": "Y",
+                                "split_point_ratio": "{stand_height_ratio}"
+                            },
+                            "output": ["stand", "screen_assembly"]
+                        },
+                        {
+                            "operation": "calculate_pivot_point",
+                            "parameters": {
+                                "mesh": "screen_assembly",
+                                "pivot_type": "center"
+                            },
+                            "output": "pivot_point"
+                        },
+                        {
+                            "operation": "rotate_mesh_around_pivot",
+                            "parameters": {
+                                "mesh": "screen_assembly",
+                                "angle": "{angle}",
+                                "axis": [0, 1, 0],
+                                "pivot": "pivot_point"
+                            },
+                            "output": "swiveled_screen"
+                        },
+                        {
+                            "operation": "combine_meshes",
+                            "parameters": {
+                                "meshes": ["stand", "swiveled_screen"]
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "adjust_screen_size": {
+                    "description": "Adjust the width and height of the screen assembly, keeping the stand the same.",
+                    "parameters": {
+                        "width_factor": {
+                            "type": "float",
+                            "default": 1.33,
+                            "description": "The scaling factor for the screen width (X-axis)."
+                        },
+                        "height_factor": {
+                            "type": "float",
+                            "default": 1.0,
+                            "description": "The scaling factor for the screen height (Y-axis)."
+                        },
+                        "stand_height_ratio": {
+                            "type": "float",
+                            "default": 0.2,
+                            "description": "The height ratio of the stand, used to separate it from the screen assembly."
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "split_mesh_by_axis",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "axis": "Y",
+                                "split_point_ratio": "{stand_height_ratio}"
+                            },
+                            "output": ["stand", "screen_assembly"]
+                        },
+                        {
+                            "operation": "calculate_scale_center",
+                            "parameters": {
+                                "mesh": "screen_assembly",
+                                "center_type": "center"
+                            },
+                            "output": "scale_center"
+                        },
+                        {
+                            "operation": "scale_mesh",
+                            "parameters": {
+                                "mesh": "screen_assembly",
+                                "factor": ["{width_factor}", "{height_factor}", 1.0],
+                                "center": "scale_center"
+                            },
+                            "output": "resized_screen"
+                        },
+                        {
+                            "operation": "combine_meshes",
+                            "parameters": {
+                                "meshes": ["stand", "resized_screen"]
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                }
+            }
+        }
+    }
+}

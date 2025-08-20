@@ -1,0 +1,251 @@
+{
+  "elephant": {
+    "name": "elephant",
+    "description": "Elephant model editing configuration. Assumed to be facing along the positive X-axis. For specific operations, it is expected to have named parts like 'body', 'head', 'trunk', 'left_ear', and 'right_ear'.",
+    "operations": {
+      "common": {
+        "add": {
+          "description": "Add a new elephant next to the current one.",
+          "parameters": {
+            "direction": {
+              "type": "string",
+              "default": "right",
+              "options": ["left", "right", "up", "down", "front", "back"],
+              "description": "Direction to add the new elephant."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "copy_mesh",
+              "parameters": { "mesh": "input_mesh" },
+              "output": "copied_mesh"
+            },
+            {
+              "operation": "get_bounds",
+              "parameters": { "mesh": "input_mesh" },
+              "output": "bounds"
+            },
+            {
+              "operation": "calculate_translation_vector",
+              "parameters": {
+                "direction": "{direction}",
+                "bounds": "bounds"
+              },
+              "output": "translation"
+            },
+            {
+              "operation": "translate_mesh",
+              "parameters": {
+                "mesh": "copied_mesh",
+                "vector": "translation"
+              },
+              "output": "translated_mesh"
+            },
+            {
+              "operation": "combine_meshes",
+              "parameters": {
+                "meshes": ["input_mesh", "translated_mesh"]
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "translate": {
+          "description": "Translate (move) the elephant.",
+          "parameters": {
+            "vector": {
+              "type": "list_float",
+              "default": [0.0, 0.0, 0.0],
+              "description": "Translation vector [x, y, z]."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "translate_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "vector": "{vector}"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "rotate": {
+          "description": "Rotate the elephant on the spot (around its vertical Y-axis).",
+          "parameters": {
+            "angle": {
+              "type": "float",
+              "default": 10.0,
+              "description": "Turning angle in degrees."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "rotate_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "angle": "{angle}",
+                "axis": [0, 1, 0],
+                "center": "center"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "scale": {
+          "description": "Scale the elephant to make it larger or smaller.",
+          "parameters": {
+            "factor": {
+              "type": "float",
+              "default": 1.2,
+              "description": "Uniform scaling factor."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "calculate_scale_center",
+              "parameters": {
+                "mesh": "input_mesh",
+                "center_type": "center"
+              },
+              "output": "scale_center"
+            },
+            {
+              "operation": "scale_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "factor": "{factor}",
+                "center": "scale_center"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        }
+      },
+      "specific": {
+        "trumpet": {
+          "description": "Raises the head and curls the trunk in a trumpeting gesture.",
+          "parameters": {
+            "head_tilt_angle": {
+              "type": "float",
+              "default": 15.0,
+              "description": "The upward angle to tilt the head."
+            },
+            "trunk_raise_angle": {
+              "type": "float",
+              "default": 60.0,
+              "description": "The angle to raise the trunk."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "separate_by_part_names",
+              "parameters": {
+                "mesh": "input_mesh",
+                "part_names": ["body", "head", "trunk"]
+              },
+              "output": ["body_mesh", "head_mesh", "trunk_mesh"]
+            },
+            {
+              "operation": "get_part_pivot",
+              "parameters": { "mesh": "trunk_mesh", "pivot_location": "base" },
+              "output": "trunk_pivot"
+            },
+            {
+              "operation": "rotate_mesh_around_pivot",
+              "parameters": {
+                "mesh": "trunk_mesh",
+                "angle": "{trunk_raise_angle}",
+                "axis": [0, 0, 1],
+                "pivot": "trunk_pivot"
+              },
+              "output": "raised_trunk"
+            },
+            {
+              "operation": "combine_meshes",
+              "parameters": { "meshes": ["head_mesh", "raised_trunk"] },
+              "output": "head_assembly"
+            },
+            {
+              "operation": "get_part_pivot",
+              "parameters": { "mesh": "head_mesh", "pivot_location": "base" },
+              "output": "neck_pivot"
+            },
+            {
+              "operation": "rotate_mesh_around_pivot",
+              "parameters": {
+                "mesh": "head_assembly",
+                "angle": "{head_tilt_angle}",
+                "axis": [0, 0, 1],
+                "pivot": "neck_pivot"
+              },
+              "output": "trumpeting_head_assembly"
+            },
+            {
+              "operation": "combine_meshes",
+              "parameters": { "meshes": ["body_mesh", "trumpeting_head_assembly"] },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "flap_ears": {
+          "description": "Flaps the elephant's ears outwards.",
+          "parameters": {
+            "angle": {
+              "type": "float",
+              "default": 25.0,
+              "description": "The angle to flap the ears outward, in degrees."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "separate_by_part_names",
+              "parameters": {
+                "mesh": "input_mesh",
+                "part_names": ["body", "left_ear", "right_ear"]
+              },
+              "output": ["body_mesh", "left_ear_mesh", "right_ear_mesh"]
+            },
+            {
+              "operation": "get_part_pivot",
+              "parameters": { "mesh": "left_ear_mesh", "pivot_location": "base" },
+              "output": "left_ear_pivot"
+            },
+            {
+              "operation": "get_part_pivot",
+              "parameters": { "mesh": "right_ear_mesh", "pivot_location": "base" },
+              "output": "right_ear_pivot"
+            },
+            {
+              "operation": "rotate_mesh_around_pivot",
+              "parameters": {
+                "mesh": "left_ear_mesh",
+                "angle": "{angle}",
+                "axis": [0, 1, 0],
+                "pivot": "left_ear_pivot"
+              },
+              "output": "flapped_left_ear"
+            },
+            {
+              "operation": "rotate_mesh_around_pivot",
+              "parameters": {
+                "mesh": "right_ear_mesh",
+                "angle": "-{angle}",
+                "axis": [0, 1, 0],
+                "pivot": "right_ear_pivot"
+              },
+              "output": "flapped_right_ear"
+            },
+            {
+              "operation": "combine_meshes",
+              "parameters": {
+                "meshes": ["body_mesh", "flapped_left_ear", "flapped_right_ear"]
+              },
+              "output": "result_mesh"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

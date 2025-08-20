@@ -1,0 +1,264 @@
+{
+  "woman": {
+    "name": "woman",
+    "description": "Woman model editing configuration.",
+    "operations": {
+      "common": {
+        "add": {
+          "description": "Add a new woman nearby.",
+          "parameters": {
+            "direction": {
+              "type": "string",
+              "default": "right",
+              "options": ["left", "right", "front", "back"],
+              "description": "Direction to add the new woman."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "copy_mesh",
+              "parameters": {
+                "mesh": "input_mesh"
+              },
+              "output": "copied_mesh"
+            },
+            {
+              "operation": "get_bounds",
+              "parameters": {
+                "mesh": "input_mesh"
+              },
+              "output": "bounds"
+            },
+            {
+              "operation": "calculate_translation_vector",
+              "parameters": {
+                "direction": "{direction}",
+                "bounds": "bounds"
+              },
+              "output": "translation"
+            },
+            {
+              "operation": "translate_mesh",
+              "parameters": {
+                "mesh": "copied_mesh",
+                "vector": "translation"
+              },
+              "output": "translated_mesh"
+            },
+            {
+              "operation": "combine_meshes",
+              "parameters": {
+                "meshes": ["input_mesh", "translated_mesh"]
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "translate": {
+          "description": "Translate the woman model.",
+          "parameters": {
+            "vector": {
+              "type": "list_float",
+              "default": [1.0, 0.0, 0.0],
+              "description": "Translation vector [x, y, z]."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "translate_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "vector": "{vector}"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "rotate": {
+          "description": "Rotate the woman model.",
+          "parameters": {
+            "angle": {
+              "type": "float",
+              "default": 90.0,
+              "description": "Rotation angle in degrees."
+            },
+            "axis": {
+              "type": "list_float",
+              "default": [0.0, 1.0, 0.0],
+              "description": "Rotation axis vector [x, y, z]."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "rotate_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "angle": "{angle}",
+                "axis": "{axis}"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "scale": {
+          "description": "Scale the woman model.",
+          "parameters": {
+            "factor": {
+              "type": "float",
+              "default": 1.2,
+              "description": "Scaling factor."
+            },
+            "center": {
+              "type": "string",
+              "default": "center",
+              "options": ["origin", "center"],
+              "description": "The center point for scaling."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "calculate_scale_center",
+              "parameters": {
+                "mesh": "input_mesh",
+                "center_type": "{center}"
+              },
+              "output": "scale_center"
+            },
+            {
+              "operation": "scale_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "factor": "{factor}",
+                "center": "scale_center"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        }
+      },
+      "specific": {
+        "wave_hand": {
+          "description": "Pose the woman to wave her hand.",
+          "parameters": {
+            "hand": {
+              "type": "string",
+              "default": "right",
+              "options": ["left", "right"],
+              "description": "Which hand to wave."
+            },
+            "angle": {
+              "type": "float",
+              "default": 45.0,
+              "description": "The waving angle of the forearm."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "separate_extraction",
+              "parameters": {
+                "mesh": "input_mesh",
+                "part_name": "{hand}_arm",
+                "ratio": 0.15
+              },
+              "output": ["woman_body", "woman_arm"]
+            },
+            {
+              "operation": "calculate_pivot_point",
+              "parameters": {
+                "mesh": "woman_arm",
+                "pivot_type": "edge",
+                "edge": "top"
+              },
+              "output": "elbow_pivot"
+            },
+            {
+              "operation": "calculate_rotation_axis",
+              "parameters": {
+                "mesh": "woman_arm",
+                "edge": "front"
+              },
+              "output": "rotation_axis"
+            },
+            {
+              "operation": "rotate_mesh_around_pivot",
+              "parameters": {
+                "mesh": "woman_arm",
+                "pivot": "elbow_pivot",
+                "axis": "rotation_axis",
+                "angle": "{angle}"
+              },
+              "output": "waved_arm"
+            },
+            {
+              "operation": "combine_meshes",
+              "parameters": {
+                "meshes": ["woman_body", "waved_arm"]
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "take_step": {
+          "description": "Pose the woman to take a step forward.",
+          "parameters": {
+            "leg": {
+              "type": "string",
+              "default": "left",
+              "options": ["left", "right"],
+              "description": "Which leg to move forward."
+            },
+            "angle": {
+              "type": "float",
+              "default": 25.0,
+              "description": "The forward swing angle of the leg."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "separate_extraction",
+              "parameters": {
+                "mesh": "input_mesh",
+                "part_name": "{leg}_leg",
+                "ratio": 0.2
+              },
+              "output": ["woman_torso", "woman_leg"]
+            },
+            {
+              "operation": "calculate_pivot_point",
+              "parameters": {
+                "mesh": "woman_leg",
+                "pivot_type": "top_center"
+              },
+              "output": "hip_pivot"
+            },
+            {
+              "operation": "calculate_rotation_axis",
+              "parameters": {
+                "mesh": "woman_leg",
+                "edge": "right"
+              },
+              "output": "rotation_axis"
+            },
+            {
+              "operation": "rotate_mesh_around_pivot",
+              "parameters": {
+                "mesh": "woman_leg",
+                "pivot": "hip_pivot",
+                "axis": "rotation_axis",
+                "angle": "{angle}"
+              },
+              "output": "moved_leg"
+            },
+            {
+              "operation": "combine_meshes",
+              "parameters": {
+                "meshes": ["woman_torso", "moved_leg"]
+              },
+              "output": "result_mesh"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

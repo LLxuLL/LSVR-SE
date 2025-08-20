@@ -1,0 +1,299 @@
+{
+    "bus": {
+        "name": "bus",
+        "description": "Bus model editing configuration",
+        "operations": {
+            "common": {
+                "add": {
+                    "description": "Add a new bus",
+                    "parameters": {
+                        "direction": {
+                            "type": "string",
+                            "default": "right",
+                            "options": [
+                                "left",
+                                "right",
+                                "up",
+                                "down",
+                                "front",
+                                "back"
+                            ],
+                            "description": "Add directions"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "copy_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh"
+                            },
+                            "output": "copied_mesh"
+                        },
+                        {
+                            "operation": "get_bounds",
+                            "parameters": {
+                                "mesh": "input_mesh"
+                            },
+                            "output": "bounds"
+                        },
+                        {
+                            "operation": "calculate_translation_vector",
+                            "parameters": {
+                                "direction": "{direction}",
+                                "bounds": "bounds"
+                            },
+                            "output": "translation"
+                        },
+                        {
+                            "operation": "translate_mesh",
+                            "parameters": {
+                                "mesh": "copied_mesh",
+                                "vector": "translation"
+                            },
+                            "output": "translated_mesh"
+                        },
+                        {
+                            "operation": "combine_meshes",
+                            "parameters": {
+                                "meshes": [
+                                    "input_mesh",
+                                    "translated_mesh"
+                                ]
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "rotate": {
+                    "description": "Rotating model",
+                    "parameters": {
+                        "angle": {
+                            "type": "float",
+                            "default": 90.0,
+                            "description": "Rotation angle (degrees)"
+                        },
+                        "axis": {
+                            "type": "string",
+                            "default": "y",
+                            "options": [
+                                "x",
+                                "y",
+                                "z"
+                            ],
+                            "description": "Rotation axis"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "rotate_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "angle": "{angle}",
+                                "axis": "{axis}"
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "translate": {
+                    "description": "Translation model",
+                    "parameters": {
+                        "vector": {
+                            "type": "array",
+                            "default": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "description": "Translation vector"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "translate_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "vector": "{vector}"
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "scale": {
+                    "description": "Scaling model",
+                    "parameters": {
+                        "factor": {
+                            "type": "float",
+                            "default": 1.0,
+                            "description": "Scaling factor"
+                        },
+                        "center": {
+                            "type": "string",
+                            "default": "center",
+                            "options": [
+                                "origin",
+                                "center"
+                            ],
+                            "description": "Zoom Center"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "calculate_scale_center",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "center_type": "{center}"
+                            },
+                            "output": "scale_center"
+                        },
+                        {
+                            "operation": "scale_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "factor": "{factor}",
+                                "center": "scale_center"
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                }
+            },
+            "specific": {
+                "open_doors": {
+                    "description": "Open or close the bus doors.",
+                    "parameters": {
+                        "percent_open": {
+                            "type": "float",
+                            "default": 100.0,
+                            "description": "How much to open the doors (0 to 100)."
+                        },
+                        "door": {
+                            "type": "string",
+                            "default": "all",
+                            "options": [ "front", "rear", "all" ],
+                            "description": "Which door to operate."
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "separate_extraction",
+                            "parameters": { "mesh": "input_mesh", "region": "{door}_doors" },
+                            "output": [ "bus_body", "door_meshes" ]
+                        },
+                        {
+                            "operation": "calculate_slide_direction",
+                            "parameters": { "mesh": "door_meshes" },
+                            "output": "slide_direction"
+                        },
+                        {
+                            "operation": "calculate_slide_distance",
+                            "parameters": { "mesh": "door_meshes", "percent": "{percent_open}" },
+                            "output": "slide_distance"
+                        },
+                        {
+                            "operation": "translate_mesh",
+                            "parameters": { "mesh": "door_meshes", "vector": "slide_direction * slide_distance" },
+                            "output": "opened_doors"
+                        },
+                        {
+                            "operation": "combine_meshes",
+                            "parameters": { "meshes": [ "bus_body", "opened_doors" ] },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "steer_wheels": {
+                    "description": "Turn the front wheels of the bus.",
+                    "parameters": {
+                        "angle": {
+                            "type": "float",
+                            "default": 25.0,
+                            "description": "Angle to steer the front wheels."
+                        },
+                        "direction": {
+                            "type": "string",
+                            "default": "left",
+                            "options": [ "left", "right" ],
+                            "description": "Direction to steer."
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "separate_extraction",
+                            "parameters": { "mesh": "input_mesh", "region": "front_wheels" },
+                            "output": [ "bus_body", "front_wheels_mesh" ]
+                        },
+                        {
+                            "operation": "calculate_pivot_point",
+                            "parameters": { "mesh": "front_wheels_mesh", "pivot_type": "steering_pivot" },
+                            "output": "pivot_point"
+                        },
+                        {
+                            "operation": "calculate_rotation_axis",
+                            "parameters": { "mesh": "front_wheels_mesh", "axis_type": "vertical_axis" },
+                            "output": "rotation_axis"
+                        },
+                        {
+                            "operation": "adjust_angle_by_direction",
+                            "parameters": { "angle": "{angle}", "direction": "{direction}" },
+                            "output": "final_angle"
+                        },
+                        {
+                            "operation": "rotate_mesh_around_pivot",
+                            "parameters": { "mesh": "front_wheels_mesh", "angle": "final_angle", "pivot": "pivot_point", "axis": "rotation_axis" },
+                            "output": "steered_wheels"
+                        },
+                        {
+                            "operation": "combine_meshes",
+                            "parameters": { "meshes": [ "bus_body", "steered_wheels" ] },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "deploy_stop_sign": {
+                    "description": "Deploy or retract the side stop sign (for school buses).",
+                    "parameters": {
+                        "state": {
+                            "type": "string",
+                            "default": "deploy",
+                            "options": [ "deploy", "retract" ],
+                            "description": "Action for the stop sign."
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "separate_extraction",
+                            "parameters": { "mesh": "input_mesh", "region": "stop_sign" },
+                            "output": [ "bus_body", "sign_mesh" ]
+                        },
+                        {
+                            "operation": "calculate_pivot_point",
+                            "parameters": { "mesh": "sign_mesh", "pivot_type": "hinge" },
+                            "output": "pivot_point"
+                        },
+                        {
+                            "operation": "calculate_rotation_axis",
+                            "parameters": { "mesh": "sign_mesh", "axis_type": "hinge_axis" },
+                            "output": "rotation_axis"
+                        },
+                        {
+                            "operation": "set_state_value",
+                            "parameters": { "state": "{state}", "on_value": -90.0, "off_value": 0.0 },
+                            "output": "final_angle"
+                        },
+                        {
+                            "operation": "rotate_mesh_around_pivot",
+                            "parameters": { "mesh": "sign_mesh", "angle": "final_angle", "pivot": "pivot_point", "axis": "rotation_axis" },
+                            "output": "moved_sign"
+                        },
+                        {
+                            "operation": "combine_meshes",
+                            "parameters": { "meshes": [ "bus_body", "moved_sign" ] },
+                            "output": "result_mesh"
+                        }
+                    ]
+                }
+            }
+        }
+    }
+}

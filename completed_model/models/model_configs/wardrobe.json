@@ -1,0 +1,226 @@
+{
+    "wardrobe": {
+        "name": "wardrobe",
+        "description": "Editing configuration for the Wardrobe model",
+        "operations": {
+            "common": {
+                "add": {
+                    "description": "Place a new wardrobe nearby",
+                    "parameters": {
+                        "direction": {
+                            "type": "string",
+                            "default": "right",
+                            "options": ["left", "right", "front", "back"],
+                            "description": "Direction to add the new wardrobe"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "copy_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh"
+                            },
+                            "output": "copied_mesh"
+                        },
+                        {
+                            "operation": "get_bounds",
+                            "parameters": {
+                                "mesh": "input_mesh"
+                            },
+                            "output": "bounds"
+                        },
+                        {
+                            "operation": "calculate_translation_vector",
+                            "parameters": {
+                                "direction": "{direction}",
+                                "bounds": "bounds"
+                            },
+                            "output": "translation"
+                        },
+                        {
+                            "operation": "translate_mesh",
+                            "parameters": {
+                                "mesh": "copied_mesh",
+                                "vector": "translation"
+                            },
+                            "output": "translated_mesh"
+                        },
+                        {
+                            "operation": "combine_meshes",
+                            "parameters": {
+                                "meshes": ["input_mesh", "translated_mesh"]
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "rotate": {
+                    "description": "Rotate the entire wardrobe",
+                    "parameters": {
+                        "angle": {
+                            "type": "float",
+                            "default": 90.0,
+                            "description": "Rotation angle (in degrees)"
+                        },
+                        "axis": {
+                            "type": "vector3d",
+                            "default": [0, 1, 0],
+                            "description": "Axis of rotation (Y-axis)"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "rotate_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "angle": "{angle}",
+                                "axis": "{axis}"
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "scale": {
+                    "description": "Scale the entire wardrobe model uniformly",
+                    "parameters": {
+                        "factor": {
+                            "type": "float",
+                            "default": 1.1,
+                            "description": "Scaling factor"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "calculate_scale_center",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "center_type": "origin"
+                            },
+                            "output": "scale_center"
+                        },
+                        {
+                            "operation": "scale_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "factor": "{factor}",
+                                "center": "scale_center"
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "translate": {
+                    "description": "Move the entire wardrobe's position",
+                    "parameters": {
+                        "vector": {
+                            "type": "vector3d",
+                            "default": [2, 0, 0],
+                            "description": "Translation vector"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "translate_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "vector": "{vector}"
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                }
+            },
+            "specific": {
+                "open_doors": {
+                    "description": "Open the wardrobe doors (assumes two doors).",
+                    "parameters": {
+                        "angle": {
+                            "type": "float",
+                            "default": 80.0,
+                            "description": "The angle to swing the doors open."
+                        },
+                        "door_thickness_ratio": {
+                            "type": "float",
+                            "default": 0.05,
+                            "description": "Ratio to separate the doors from the wardrobe body, based on depth."
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "split_mesh_by_axis",
+                            "parameters": { "mesh": "input_mesh", "axis": "Z", "split_point_ratio_from_front": "{door_thickness_ratio}" },
+                            "output": ["door_assembly", "main_body"]
+                        },
+                        {
+                            "operation": "split_mesh_by_axis",
+                            "parameters": { "mesh": "door_assembly", "axis": "X", "split_point_ratio": 0.5 },
+                            "output": ["left_door", "right_door"]
+                        },
+                        {
+                            "operation": "calculate_pivot_point",
+                            "parameters": { "mesh": "left_door", "pivot_type": "edge", "edge": "left" },
+                            "output": "left_pivot"
+                        },
+                        {
+                            "operation": "calculate_pivot_point",
+                            "parameters": { "mesh": "right_door", "pivot_type": "edge", "edge": "right" },
+                            "output": "right_pivot"
+                        },
+                        {
+                            "operation": "rotate_mesh_around_pivot",
+                            "parameters": { "mesh": "left_door", "angle": "{angle}", "axis": [0, 1, 0], "pivot": "left_pivot" },
+                            "output": "opened_left_door"
+                        },
+                        {
+                            "operation": "rotate_mesh_around_pivot",
+                            "parameters": { "mesh": "right_door", "angle": "-{angle}", "axis": [0, 1, 0], "pivot": "right_pivot" },
+                            "output": "opened_right_door"
+                        },
+                        {
+                            "operation": "combine_meshes",
+                            "parameters": { "meshes": ["main_body", "opened_left_door", "opened_right_door"] },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "open_drawer": {
+                    "description": "Slide a bottom drawer open.",
+                    "parameters": {
+                        "percent_open": {
+                            "type": "float",
+                            "default": 75.0,
+                            "description": "How far to open the drawer, as a percentage of its depth."
+                        },
+                        "drawer_height_ratio": {
+                            "type": "float",
+                            "default": 0.25,
+                            "description": "The height of the drawer section relative to the total wardrobe height."
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "split_mesh_by_axis",
+                            "parameters": { "mesh": "input_mesh", "axis": "Y", "split_point_ratio": "{drawer_height_ratio}" },
+                            "output": ["drawer", "upper_cabinet"]
+                        },
+                        {
+                            "operation": "calculate_slide_distance",
+                            "parameters": { "mesh": "drawer", "axis": "Z", "percent": "{percent_open}" },
+                            "output": "slide_vector"
+                        },
+                        {
+                            "operation": "translate_mesh",
+                            "parameters": { "mesh": "drawer", "vector": "slide_vector" },
+                            "output": "opened_drawer"
+                        },
+                        {
+                            "operation": "combine_meshes",
+                            "parameters": { "meshes": ["upper_cabinet", "opened_drawer"] },
+                            "output": "result_mesh"
+                        }
+                    ]
+                }
+            }
+        }
+    }
+}

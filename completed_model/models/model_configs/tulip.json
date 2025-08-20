@@ -1,0 +1,239 @@
+{
+    "tulip": {
+        "name": "tulip",
+        "description": "Editing configuration for the Tulip model",
+        "operations": {
+            "common": {
+                "add": {
+                    "description": "Plant a new tulip nearby",
+                    "parameters": {
+                        "direction": {
+                            "type": "string",
+                            "default": "right",
+                            "options": ["left", "right", "front", "back"],
+                            "description": "Direction to add the new tulip"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "copy_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh"
+                            },
+                            "output": "copied_mesh"
+                        },
+                        {
+                            "operation": "get_bounds",
+                            "parameters": {
+                                "mesh": "input_mesh"
+                            },
+                            "output": "bounds"
+                        },
+                        {
+                            "operation": "calculate_translation_vector",
+                            "parameters": {
+                                "direction": "{direction}",
+                                "bounds": "bounds"
+                            },
+                            "output": "translation"
+                        },
+                        {
+                            "operation": "translate_mesh",
+                            "parameters": {
+                                "mesh": "copied_mesh",
+                                "vector": "translation"
+                            },
+                            "output": "translated_mesh"
+                        },
+                        {
+                            "operation": "combine_meshes",
+                            "parameters": {
+                                "meshes": ["input_mesh", "translated_mesh"]
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "rotate": {
+                    "description": "Rotate the entire tulip",
+                    "parameters": {
+                        "angle": {
+                            "type": "float",
+                            "default": 30.0,
+                            "description": "Rotation angle (in degrees)"
+                        },
+                        "axis": {
+                            "type": "vector3d",
+                            "default": [0, 1, 0],
+                            "description": "Axis of rotation (Y-axis)"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "rotate_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "angle": "{angle}",
+                                "axis": "{axis}"
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "scale": {
+                    "description": "Scale the entire tulip model uniformly (make it grow)",
+                    "parameters": {
+                        "factor": {
+                            "type": "float",
+                            "default": 1.25,
+                            "description": "Scaling factor"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "calculate_scale_center",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "center_type": "origin"
+                            },
+                            "output": "scale_center"
+                        },
+                        {
+                            "operation": "scale_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "factor": "{factor}",
+                                "center": "scale_center"
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "translate": {
+                    "description": "Move the entire tulip's position",
+                    "parameters": {
+                        "vector": {
+                            "type": "vector3d",
+                            "default": [0.5, 0, 0],
+                            "description": "Translation vector"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "translate_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "vector": "{vector}"
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                }
+            },
+            "specific": {
+                "open_bloom": {
+                    "description": "Make the tulip petals open or close.",
+                    "parameters": {
+                        "open_factor": {
+                            "type": "float",
+                            "default": 1.4,
+                            "description": "The scaling factor for the bloom. >1 to open, <1 to close."
+                        },
+                        "bloom_height_ratio": {
+                            "type": "float",
+                            "default": 0.7,
+                            "description": "The vertical ratio to separate the bloom from the stem."
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "split_mesh_by_axis",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "axis": "Y",
+                                "split_point_ratio": "{bloom_height_ratio}"
+                            },
+                            "output": ["stem_and_leaves", "bloom"]
+                        },
+                        {
+                            "operation": "calculate_scale_center",
+                            "parameters": {
+                                "mesh": "bloom",
+                                "center_type": "center"
+                            },
+                            "output": "scale_center"
+                        },
+                        {
+                            "operation": "scale_mesh",
+                            "parameters": {
+                                "mesh": "bloom",
+                                "factor": ["{open_factor}", 1.0, "{open_factor}"],
+                                "center": "scale_center"
+                            },
+                            "output": "opened_bloom"
+                        },
+                        {
+                            "operation": "combine_meshes",
+                            "parameters": {
+                                "meshes": ["stem_and_leaves", "opened_bloom"]
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "bend_stem": {
+                    "description": "Bend the tulip's head to one side.",
+                    "parameters": {
+                        "angle": {
+                            "type": "float",
+                            "default": 20.0,
+                            "description": "The angle to bend the stem."
+                        },
+                        "bend_point_ratio": {
+                            "type": "float",
+                            "default": 0.6,
+                            "description": "The vertical height ratio where the bend will occur."
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "split_mesh_by_axis",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "axis": "Y",
+                                "split_point_ratio": "{bend_point_ratio}"
+                            },
+                            "output": ["lower_stem", "upper_part"]
+                        },
+                        {
+                            "operation": "calculate_pivot_point",
+                            "parameters": {
+                                "mesh": "upper_part",
+                                "pivot_type": "edge",
+                                "edge": "bottom"
+                            },
+                            "output": "pivot_point"
+                        },
+                        {
+                            "operation": "rotate_mesh_around_pivot",
+                            "parameters": {
+                                "mesh": "upper_part",
+                                "angle": "{angle}",
+                                "axis": [0, 0, 1],
+                                "pivot": "pivot_point"
+                            },
+                            "output": "bent_upper_part"
+                        },
+                        {
+                            "operation": "combine_meshes",
+                            "parameters": {
+                                "meshes": ["lower_stem", "bent_upper_part"]
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                }
+            }
+        }
+    }
+}

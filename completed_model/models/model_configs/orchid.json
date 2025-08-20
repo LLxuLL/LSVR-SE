@@ -1,0 +1,225 @@
+{
+  "orchid": {
+    "name": "orchid",
+    "description": "Editing configuration for orchid plant models",
+    "operations": {
+      "common": {
+        "add": {
+          "description": "Add a new orchid nearby",
+          "parameters": {
+            "direction": {
+              "type": "string",
+              "default": "right",
+              "options": ["left", "right", "front", "back"],
+              "description": "Direction to add the new orchid"
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "copy_mesh",
+              "parameters": {
+                "mesh": "input_mesh"
+              },
+              "output": "copied_mesh"
+            },
+            {
+              "operation": "get_bounds",
+              "parameters": {
+                "mesh": "input_mesh"
+              },
+              "output": "bounds"
+            },
+            {
+              "operation": "calculate_translation_vector",
+              "parameters": {
+                "direction": "{direction}",
+                "bounds": "bounds"
+              },
+              "output": "translation"
+            },
+            {
+              "operation": "translate_mesh",
+              "parameters": {
+                "mesh": "copied_mesh",
+                "vector": "translation"
+              },
+              "output": "translated_mesh"
+            },
+            {
+              "operation": "combine_meshes",
+              "parameters": {
+                "meshes": ["input_mesh", "translated_mesh"]
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "rotate": {
+          "description": "Rotate the orchid model",
+          "parameters": {
+            "angle": {
+              "type": "float",
+              "default": 20.0,
+              "description": "Rotation angle (degrees) around the Y-axis"
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "rotate_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "angle": "{angle}",
+                "axis": [0, 1, 0]
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "translate": {
+          "description": "Translate the orchid model",
+          "parameters": {
+            "vector": {
+              "type": "list",
+              "default": [5, 0, 0],
+              "description": "Translation vector (X, Y, Z)"
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "translate_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "vector": "{vector}"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "scale": {
+          "description": "Scale the orchid model to make it grow bigger or smaller",
+          "parameters": {
+            "factor": {
+              "type": "float",
+              "default": 1.1,
+              "description": "Scaling factor"
+            },
+            "center": {
+              "type": "string",
+              "default": "origin",
+              "options": ["origin", "center"],
+              "description": "Scaling center (origin lets it grow from its base)"
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "calculate_scale_center",
+              "parameters": {
+                "mesh": "input_mesh",
+                "center_type": "{center}"
+              },
+              "output": "scale_center"
+            },
+            {
+              "operation": "scale_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "factor": "{factor}",
+                "center": "scale_center"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        }
+      },
+      "specific": {
+        "bloom_wider": {
+          "description": "Makes the orchid flower's petals open up wider.",
+          "parameters": {
+            "angle": {
+              "type": "float",
+              "default": 15.0,
+              "description": "The extra angle to open the petals."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "separate_extraction",
+              "parameters": {
+                "mesh": "input_mesh",
+                "part_name": "petals"
+              },
+              "outputs": ["petals_mesh", "plant_body_mesh"]
+            },
+            {
+              "operation": "unfurl_petals",
+              "parameters": {
+                "mesh": "petals_mesh",
+                "angle": "{angle}"
+              },
+              "output": "bloomed_petals"
+            },
+            {
+              "operation": "combine_meshes",
+              "parameters": {
+                "meshes": ["plant_body_mesh", "bloomed_petals"]
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "droop_flower": {
+          "description": "Tilts the main flower head downwards, as if wilting slightly.",
+          "parameters": {
+            "angle": {
+              "type": "float",
+              "default": 20.0,
+              "description": "The downward angle for the flower head."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "separate_extraction",
+              "parameters": {
+                "mesh": "input_mesh",
+                "part_name": "flower_head"
+              },
+              "outputs": ["flower_head_mesh", "stem_and_leaves_mesh"]
+            },
+            {
+              "operation": "get_bounds",
+              "parameters": {
+                "mesh": "flower_head_mesh"
+              },
+              "output": "flower_bounds"
+            },
+            {
+              "operation": "calculate_pivot_point",
+              "parameters": {
+                "bounds": "flower_bounds",
+                "edge": "bottom_center"
+              },
+              "output": "pivot_point"
+            },
+            {
+              "operation": "rotate_mesh_around_pivot",
+              "parameters": {
+                "mesh": "flower_head_mesh",
+                "angle": "{angle}",
+                "axis": [1, 0, 0],
+                "pivot": "pivot_point"
+              },
+              "output": "drooped_flower"
+            },
+            {
+              "operation": "combine_meshes",
+              "parameters": {
+                "meshes": ["stem_and_leaves_mesh", "drooped_flower"]
+              },
+              "output": "result_mesh"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

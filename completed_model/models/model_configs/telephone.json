@@ -1,0 +1,183 @@
+{
+    "telephone": {
+        "name": "telephone",
+        "description": "Editing configuration for the Telephone model",
+        "operations": {
+            "common": {
+                "add": {
+                    "description": "Place a new telephone nearby",
+                    "parameters": {
+                        "direction": {
+                            "type": "string",
+                            "default": "right",
+                            "options": ["left", "right", "front", "back"],
+                            "description": "Direction to add the new telephone"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "copy_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh"
+                            },
+                            "output": "copied_mesh"
+                        },
+                        {
+                            "operation": "get_bounds",
+                            "parameters": {
+                                "mesh": "input_mesh"
+                            },
+                            "output": "bounds"
+                        },
+                        {
+                            "operation": "calculate_translation_vector",
+                            "parameters": {
+                                "direction": "{direction}",
+                                "bounds": "bounds"
+                            },
+                            "output": "translation"
+                        },
+                        {
+                            "operation": "translate_mesh",
+                            "parameters": {
+                                "mesh": "copied_mesh",
+                                "vector": "translation"
+                            },
+                            "output": "translated_mesh"
+                        },
+                        {
+                            "operation": "combine_meshes",
+                            "parameters": {
+                                "meshes": ["input_mesh", "translated_mesh"]
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "rotate": {
+                    "description": "Rotate the entire telephone",
+                    "parameters": {
+                        "angle": {
+                            "type": "float",
+                            "default": 45.0,
+                            "description": "Rotation angle (in degrees)"
+                        },
+                        "axis": {
+                            "type": "vector3d",
+                            "default": [0, 1, 0],
+                            "description": "Axis of rotation (Y-axis)"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "rotate_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "angle": "{angle}",
+                                "axis": "{axis}"
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "scale": {
+                    "description": "Scale the entire telephone model",
+                    "parameters": {
+                        "factor": {
+                            "type": "float",
+                            "default": 1.1,
+                            "description": "Scaling factor"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "calculate_scale_center",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "center_type": "origin"
+                            },
+                            "output": "scale_center"
+                        },
+                        {
+                            "operation": "scale_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "factor": "{factor}",
+                                "center": "scale_center"
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "translate": {
+                    "description": "Move the entire telephone's position",
+                    "parameters": {
+                        "vector": {
+                            "type": "vector3d",
+                            "default": [1, 0, 0],
+                            "description": "Translation vector"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "translate_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "vector": "{vector}"
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                }
+            },
+            "specific": {
+                "lift_handset": {
+                    "description": "Lift the handset off the telephone base.",
+                    "parameters": {
+                        "lift_height": {
+                            "type": "float",
+                            "default": 10.0,
+                            "description": "The vertical distance to lift the handset."
+                        },
+                        "forward_shift": {
+                            "type": "float",
+                            "default": 5.0,
+                            "description": "The forward distance to move the handset."
+                        },
+                        "handset_ratio": {
+                            "type": "float",
+                            "default": 0.65,
+                            "description": "The vertical split point to separate the handset from the base."
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "split_mesh_by_axis",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "axis": "Y",
+                                "split_point_ratio": "{handset_ratio}"
+                            },
+                            "output": ["base", "handset"]
+                        },
+                        {
+                            "operation": "translate_mesh",
+                            "parameters": {
+                                "mesh": "handset",
+                                "vector": [0, "{lift_height}", "{forward_shift}"]
+                            },
+                            "output": "lifted_handset"
+                        },
+                        {
+                            "operation": "combine_meshes",
+                            "parameters": {
+                                "meshes": ["base", "lifted_handset"]
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                }
+            }
+        }
+    }
+}

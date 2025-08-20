@@ -1,0 +1,241 @@
+{
+    "tractor": {
+        "name": "tractor",
+        "description": "Editing configuration for the Tractor model",
+        "operations": {
+            "common": {
+                "add": {
+                    "description": "Place a new tractor nearby",
+                    "parameters": {
+                        "direction": {
+                            "type": "string",
+                            "default": "right",
+                            "options": ["left", "right", "front", "back"],
+                            "description": "Direction to add the new tractor"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "copy_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh"
+                            },
+                            "output": "copied_mesh"
+                        },
+                        {
+                            "operation": "get_bounds",
+                            "parameters": {
+                                "mesh": "input_mesh"
+                            },
+                            "output": "bounds"
+                        },
+                        {
+                            "operation": "calculate_translation_vector",
+                            "parameters": {
+                                "direction": "{direction}",
+                                "bounds": "bounds"
+                            },
+                            "output": "translation"
+                        },
+                        {
+                            "operation": "translate_mesh",
+                            "parameters": {
+                                "mesh": "copied_mesh",
+                                "vector": "translation"
+                            },
+                            "output": "translated_mesh"
+                        },
+                        {
+                            "operation": "combine_meshes",
+                            "parameters": {
+                                "meshes": ["input_mesh", "translated_mesh"]
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "rotate": {
+                    "description": "Rotate the entire tractor",
+                    "parameters": {
+                        "angle": {
+                            "type": "float",
+                            "default": 30.0,
+                            "description": "Rotation angle (in degrees)"
+                        },
+                        "axis": {
+                            "type": "vector3d",
+                            "default": [0, 1, 0],
+                            "description": "Axis of rotation (Y-axis)"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "rotate_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "angle": "{angle}",
+                                "axis": "{axis}"
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "scale": {
+                    "description": "Scale the entire tractor model uniformly",
+                    "parameters": {
+                        "factor": {
+                            "type": "float",
+                            "default": 1.1,
+                            "description": "Scaling factor"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "calculate_scale_center",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "center_type": "origin"
+                            },
+                            "output": "scale_center"
+                        },
+                        {
+                            "operation": "scale_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "factor": "{factor}",
+                                "center": "scale_center"
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "translate": {
+                    "description": "Move the entire tractor's position",
+                    "parameters": {
+                        "vector": {
+                            "type": "vector3d",
+                            "default": [3, 0, 0],
+                            "description": "Translation vector"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "translate_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "vector": "{vector}"
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                }
+            },
+            "specific": {
+                "raise_loader": {
+                    "description": "Raise or lower the front loader arms.",
+                    "parameters": {
+                        "angle": {
+                            "type": "float",
+                            "default": -30.0,
+                            "description": "The angle to raise the loader. Positive for up, negative for down."
+                        },
+                        "loader_attachment_ratio": {
+                            "type": "float",
+                            "default": 0.5,
+                            "description": "Split ratio along the tractor's length (X-axis) to separate the loader assembly."
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "split_mesh_by_axis",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "axis": "X",
+                                "split_point_ratio_from_front": "{loader_attachment_ratio}"
+                            },
+                            "output": ["loader_assembly", "main_body"]
+                        },
+                        {
+                            "operation": "calculate_pivot_point",
+                            "parameters": {
+                                "mesh": "loader_assembly",
+                                "pivot_type": "edge",
+                                "edge": "back"
+                            },
+                            "output": "pivot_point"
+                        },
+                        {
+                            "operation": "rotate_mesh_around_pivot",
+                            "parameters": {
+                                "mesh": "loader_assembly",
+                                "angle": "{angle}",
+                                "axis": [0, 0, 1],
+                                "pivot": "pivot_point"
+                            },
+                            "output": "raised_loader"
+                        },
+                        {
+                            "operation": "combine_meshes",
+                            "parameters": {
+                                "meshes": ["main_body", "raised_loader"]
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "tilt_bucket": {
+                    "description": "Tilt the bucket at the end of the front loader to scoop or dump.",
+                    "parameters": {
+                        "angle": {
+                            "type": "float",
+                            "default": 45.0,
+                            "description": "The angle to tilt the bucket."
+                        },
+                        "loader_attachment_ratio": {
+                            "type": "float",
+                            "default": 0.5,
+                            "description": "Ratio to separate the entire loader assembly from the body."
+                        },
+                        "bucket_split_ratio": {
+                            "type": "float",
+                            "default": 0.3,
+                            "description": "Ratio on the loader assembly to separate the bucket from the arms."
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "split_mesh_by_axis",
+                            "parameters": { "mesh": "input_mesh", "axis": "X", "split_point_ratio_from_front": "{loader_attachment_ratio}" },
+                            "output": ["loader_assembly", "main_body"]
+                        },
+                        {
+                            "operation": "split_mesh_by_axis",
+                            "parameters": { "mesh": "loader_assembly", "axis": "X", "split_point_ratio_from_front": "{bucket_split_ratio}" },
+                            "output": ["bucket", "loader_arms"]
+                        },
+                        {
+                            "operation": "calculate_pivot_point",
+                            "parameters": { "mesh": "bucket", "pivot_type": "edge", "edge": "back" },
+                            "output": "pivot_point"
+                        },
+                        {
+                            "operation": "rotate_mesh_around_pivot",
+                            "parameters": {
+                                "mesh": "bucket",
+                                "angle": "{angle}",
+                                "axis": [0, 0, 1],
+                                "pivot": "pivot_point"
+                            },
+                            "output": "tilted_bucket"
+                        },
+                        {
+                            "operation": "combine_meshes",
+                            "parameters": { "meshes": ["main_body", "loader_arms", "tilted_bucket"] },
+                            "output": "result_mesh"
+                        }
+                    ]
+                }
+            }
+        }
+    }
+}

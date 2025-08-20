@@ -1,0 +1,230 @@
+{
+  "rocket": {
+    "name": "rocket",
+    "description": "Editing configuration for rocket models",
+    "operations": {
+      "common": {
+        "add": {
+          "description": "Add another rocket to the launchpad",
+          "parameters": {
+            "direction": {
+              "type": "string",
+              "default": "right",
+              "options": ["left", "right", "front", "back"],
+              "description": "Direction to add the new rocket"
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "copy_mesh",
+              "parameters": {
+                "mesh": "input_mesh"
+              },
+              "output": "copied_mesh"
+            },
+            {
+              "operation": "get_bounds",
+              "parameters": {
+                "mesh": "input_mesh"
+              },
+              "output": "bounds"
+            },
+            {
+              "operation": "calculate_translation_vector",
+              "parameters": {
+                "direction": "{direction}",
+                "bounds": "bounds"
+              },
+              "output": "translation"
+            },
+            {
+              "operation": "translate_mesh",
+              "parameters": {
+                "mesh": "copied_mesh",
+                "vector": "translation"
+              },
+              "output": "translated_mesh"
+            },
+            {
+              "operation": "combine_meshes",
+              "parameters": {
+                "meshes": ["input_mesh", "translated_mesh"]
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "rotate": {
+          "description": "Rotate the rocket for pre-launch aiming",
+          "parameters": {
+            "angle": {
+              "type": "float",
+              "default": 10.0,
+              "description": "Rotation angle (degrees) around its vertical axis"
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "rotate_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "angle": "{angle}",
+                "axis": [0, 1, 0]
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "translate": {
+          "description": "Translate the rocket (e.g., move to launchpad)",
+          "parameters": {
+            "vector": {
+              "type": "list",
+              "default": [10, 0, 0],
+              "description": "Translation vector (X, Y, Z)"
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "translate_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "vector": "{vector}"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "scale": {
+          "description": "Scale the rocket model",
+          "parameters": {
+            "factor": {
+              "type": "float",
+              "default": 2.0,
+              "description": "Uniform scaling factor"
+            },
+            "center": {
+              "type": "string",
+              "default": "origin",
+              "options": ["origin", "center"],
+              "description": "Scaling center"
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "calculate_scale_center",
+              "parameters": {
+                "mesh": "input_mesh",
+                "center_type": "{center}"
+              },
+              "output": "scale_center"
+            },
+            {
+              "operation": "scale_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "factor": "{factor}",
+                "center": "scale_center"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        }
+      },
+      "specific": {
+        "launch": {
+          "description": "Initiates the launch sequence, showing ignition and liftoff.",
+          "parameters": {},
+          "atomic_operations": [
+            {
+              "operation": "perform_animation",
+              "parameters": {
+                "mesh": "input_mesh",
+                "animation_name": "launch"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "stage_separation": {
+          "description": "Separates the first stage/booster from the rest of the rocket.",
+          "parameters": {
+            "separation_distance": {
+              "type": "float",
+              "default": -20.0,
+              "description": "How far the booster falls back along the Y-axis."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "separate_extraction",
+              "parameters": {
+                "mesh": "input_mesh",
+                "part_name": "first_stage"
+              },
+              "outputs": ["upper_stage_mesh", "booster_mesh"]
+            },
+            {
+              "operation": "translate_mesh",
+              "parameters": {
+                "mesh": "booster_mesh",
+                "vector": [0, "{separation_distance}", 0]
+              },
+              "output": "separated_booster"
+            },
+            {
+              "operation": "combine_meshes",
+              "parameters": {
+                "meshes": ["upper_stage_mesh", "separated_booster"]
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "deploy_payload_fairing": {
+          "description": "Jettisons the two halves of the payload fairing.",
+          "parameters": {
+            "jettison_distance": {
+              "type": "float",
+              "default": 10.0,
+              "description": "How far the fairing halves move outwards on the X-axis."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "separate_extraction",
+              "parameters": {
+                "mesh": "input_mesh",
+                "part_name": "payload_fairing"
+              },
+              "outputs": ["rocket_core", "fairing_left", "fairing_right"]
+            },
+            {
+              "operation": "translate_mesh",
+              "parameters": {
+                "mesh": "fairing_left",
+                "vector": ["-{jettison_distance}", 0, 0]
+              },
+              "output": "jettisoned_left"
+            },
+            {
+              "operation": "translate_mesh",
+              "parameters": {
+                "mesh": "fairing_right",
+                "vector": ["{jettison_distance}", 0, 0]
+              },
+              "output": "jettisoned_right"
+            },
+            {
+              "operation": "combine_meshes",
+              "parameters": {
+                "meshes": ["rocket_core", "jettisoned_left", "jettisoned_right"]
+              },
+              "output": "result_mesh"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

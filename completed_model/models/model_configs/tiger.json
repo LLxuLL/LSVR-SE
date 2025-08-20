@@ -1,0 +1,240 @@
+{
+    "tiger": {
+        "name": "tiger",
+        "description": "Editing configuration for the Tiger model",
+        "operations": {
+            "common": {
+                "add": {
+                    "description": "Place a new tiger nearby",
+                    "parameters": {
+                        "direction": {
+                            "type": "string",
+                            "default": "right",
+                            "options": ["left", "right", "front", "back"],
+                            "description": "Direction to add the new tiger"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "copy_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh"
+                            },
+                            "output": "copied_mesh"
+                        },
+                        {
+                            "operation": "get_bounds",
+                            "parameters": {
+                                "mesh": "input_mesh"
+                            },
+                            "output": "bounds"
+                        },
+                        {
+                            "operation": "calculate_translation_vector",
+                            "parameters": {
+                                "direction": "{direction}",
+                                "bounds": "bounds"
+                            },
+                            "output": "translation"
+                        },
+                        {
+                            "operation": "translate_mesh",
+                            "parameters": {
+                                "mesh": "copied_mesh",
+                                "vector": "translation"
+                            },
+                            "output": "translated_mesh"
+                        },
+                        {
+                            "operation": "combine_meshes",
+                            "parameters": {
+                                "meshes": ["input_mesh", "translated_mesh"]
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "rotate": {
+                    "description": "Rotate the entire tiger",
+                    "parameters": {
+                        "angle": {
+                            "type": "float",
+                            "default": 30.0,
+                            "description": "Rotation angle (in degrees)"
+                        },
+                        "axis": {
+                            "type": "vector3d",
+                            "default": [0, 1, 0],
+                            "description": "Axis of rotation (Y-axis)"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "rotate_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "angle": "{angle}",
+                                "axis": "{axis}"
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "scale": {
+                    "description": "Scale the entire tiger model uniformly",
+                    "parameters": {
+                        "factor": {
+                            "type": "float",
+                            "default": 1.1,
+                            "description": "Scaling factor"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "calculate_scale_center",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "center_type": "origin"
+                            },
+                            "output": "scale_center"
+                        },
+                        {
+                            "operation": "scale_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "factor": "{factor}",
+                                "center": "scale_center"
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "translate": {
+                    "description": "Move the entire tiger's position",
+                    "parameters": {
+                        "vector": {
+                            "type": "vector3d",
+                            "default": [2, 0, 0],
+                            "description": "Translation vector"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "translate_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "vector": "{vector}"
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                }
+            },
+            "specific": {
+                "turn_head": {
+                    "description": "Turn the tiger's head to look left or right.",
+                    "parameters": {
+                        "angle": {
+                            "type": "float",
+                            "default": 45.0,
+                            "description": "The horizontal angle to turn the head. Positive for right, negative for left."
+                        },
+                        "neck_split_ratio": {
+                            "type": "float",
+                            "default": 0.8,
+                            "description": "Split ratio along the body's main axis (e.g., X-axis) to separate the head."
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "split_mesh_by_axis",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "axis": "X",
+                                "split_point_ratio": "{neck_split_ratio}"
+                            },
+                            "output": ["body", "head"]
+                        },
+                        {
+                            "operation": "calculate_pivot_point",
+                            "parameters": {
+                                "mesh": "head",
+                                "pivot_type": "center"
+                            },
+                            "output": "pivot_point"
+                        },
+                        {
+                            "operation": "rotate_mesh_around_pivot",
+                            "parameters": {
+                                "mesh": "head",
+                                "angle": "{angle}",
+                                "axis": [0, 1, 0],
+                                "pivot": "pivot_point"
+                            },
+                            "output": "turned_head"
+                        },
+                        {
+                            "operation": "combine_meshes",
+                            "parameters": {
+                                "meshes": ["body", "turned_head"]
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "open_mouth": {
+                    "description": "Open the tiger's mouth for a roar.",
+                    "parameters": {
+                        "angle": {
+                            "type": "float",
+                            "default": 25.0,
+                            "description": "The downward angle to open the jaw."
+                        },
+                        "neck_split_ratio": {
+                            "type": "float",
+                            "default": 0.8,
+                            "description": "Split ratio to isolate the head from the body."
+                        },
+                        "jaw_split_ratio": {
+                            "type": "float",
+                            "default": 0.35,
+                            "description": "Vertical split ratio on the head to separate the lower jaw."
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "split_mesh_by_axis",
+                            "parameters": { "mesh": "input_mesh", "axis": "X", "split_point_ratio": "{neck_split_ratio}" },
+                            "output": ["body", "head_assembly"]
+                        },
+                        {
+                            "operation": "split_mesh_by_axis",
+                            "parameters": { "mesh": "head_assembly", "axis": "Y", "split_point_ratio": "{jaw_split_ratio}" },
+                            "output": ["lower_jaw", "upper_head"]
+                        },
+                        {
+                            "operation": "calculate_pivot_point",
+                            "parameters": { "mesh": "lower_jaw", "pivot_type": "edge", "edge": "back" },
+                            "output": "pivot_point"
+                        },
+                        {
+                            "operation": "rotate_mesh_around_pivot",
+                            "parameters": {
+                                "mesh": "lower_jaw",
+                                "angle": "{angle}",
+                                "axis": [0, 0, -1],
+                                "pivot": "pivot_point"
+                            },
+                            "output": "opened_jaw"
+                        },
+                        {
+                            "operation": "combine_meshes",
+                            "parameters": { "meshes": ["body", "upper_head", "opened_jaw"] },
+                            "output": "result_mesh"
+                        }
+                    ]
+                }
+            }
+        }
+    }
+}

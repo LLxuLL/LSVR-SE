@@ -1,0 +1,288 @@
+{
+    "cattle": {
+        "name": "cattle",
+        "description": "Cattle (cow, bull) model editing configuration",
+        "operations": {
+            "common": {
+                "add": {
+                    "description": "Add a new cattle",
+                    "parameters": {
+                        "direction": {
+                            "type": "string",
+                            "default": "right",
+                            "options": [
+                                "left",
+                                "right",
+                                "up",
+                                "down",
+                                "front",
+                                "back"
+                            ],
+                            "description": "Add directions"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "copy_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh"
+                            },
+                            "output": "copied_mesh"
+                        },
+                        {
+                            "operation": "get_bounds",
+                            "parameters": {
+                                "mesh": "input_mesh"
+                            },
+                            "output": "bounds"
+                        },
+                        {
+                            "operation": "calculate_translation_vector",
+                            "parameters": {
+                                "direction": "{direction}",
+                                "bounds": "bounds"
+                            },
+                            "output": "translation"
+                        },
+                        {
+                            "operation": "translate_mesh",
+                            "parameters": {
+                                "mesh": "copied_mesh",
+                                "vector": "translation"
+                            },
+                            "output": "translated_mesh"
+                        },
+                        {
+                            "operation": "combine_meshes",
+                            "parameters": {
+                                "meshes": [
+                                    "input_mesh",
+                                    "translated_mesh"
+                                ]
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "rotate": {
+                    "description": "Rotating model",
+                    "parameters": {
+                        "angle": {
+                            "type": "float",
+                            "default": 90.0,
+                            "description": "Rotation angle (degrees)"
+                        },
+                        "axis": {
+                            "type": "string",
+                            "default": "y",
+                            "options": [
+                                "x",
+                                "y",
+                                "z"
+                            ],
+                            "description": "Rotation axis"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "rotate_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "angle": "{angle}",
+                                "axis": "{axis}"
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "translate": {
+                    "description": "Translation model",
+                    "parameters": {
+                        "vector": {
+                            "type": "array",
+                            "default": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "description": "Translation vector"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "translate_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "vector": "{vector}"
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "scale": {
+                    "description": "Scaling model",
+                    "parameters": {
+                        "factor": {
+                            "type": "float",
+                            "default": 1.0,
+                            "description": "Scaling factor"
+                        },
+                        "center": {
+                            "type": "string",
+                            "default": "center",
+                            "options": [
+                                "origin",
+                                "center"
+                            ],
+                            "description": "Zoom Center"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "calculate_scale_center",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "center_type": "{center}"
+                            },
+                            "output": "scale_center"
+                        },
+                        {
+                            "operation": "scale_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "factor": "{factor}",
+                                "center": "scale_center"
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                }
+            },
+            "specific": {
+                "graze": {
+                    "description": "Lower the cattle's head to eat grass.",
+                    "parameters": {
+                        "angle": {
+                            "type": "float",
+                            "default": 45.0,
+                            "description": "The downward angle to lower the head."
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "separate_extraction",
+                            "parameters": { "mesh": "input_mesh", "region": "head_and_neck" },
+                            "output": [ "body_mesh", "head_mesh" ]
+                        },
+                        {
+                            "operation": "calculate_pivot_point",
+                            "parameters": { "mesh": "head_mesh", "pivot_type": "neck_base" },
+                            "output": "pivot_point"
+                        },
+                        {
+                            "operation": "calculate_rotation_axis",
+                            "parameters": { "mesh": "head_mesh", "axis_type": "horizontal_axis" },
+                            "output": "rotation_axis"
+                        },
+                        {
+                            "operation": "rotate_mesh_around_pivot",
+                            "parameters": { "mesh": "head_mesh", "angle": "{angle}", "pivot": "pivot_point", "axis": "rotation_axis" },
+                            "output": "grazing_head"
+                        },
+                        {
+                            "operation": "combine_meshes",
+                            "parameters": { "meshes": [ "body_mesh", "grazing_head" ] },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "chew_cud": {
+                    "description": "Simulate a side-to-side cud chewing motion with the lower jaw.",
+                    "parameters": {
+                        "distance": {
+                            "type": "float",
+                            "default": 0.05,
+                            "description": "Horizontal distance for the jaw to move, as a ratio of jaw width."
+                        },
+                        "direction": {
+                            "type": "string",
+                            "default": "left",
+                            "options": ["left", "right"],
+                            "description": "The direction of the jaw movement."
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "separate_extraction",
+                            "parameters": { "mesh": "input_mesh", "region": "lower_jaw" },
+                            "output": [ "head_mesh", "jaw_mesh" ]
+                        },
+                        {
+                            "operation": "calculate_translation_vector",
+                            "parameters": { "mesh_bounds": "jaw_mesh", "direction": "{direction}", "distance": "{distance}" },
+                            "output": "chew_vector"
+                        },
+                        {
+                            "operation": "translate_mesh",
+                            "parameters": { "mesh": "jaw_mesh", "vector": "chew_vector" },
+                            "output": "chewing_jaw"
+                        },
+                        {
+                            "operation": "combine_meshes",
+                            "parameters": { "meshes": [ "head_mesh", "chewing_jaw" ] },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "swish_tail": {
+                    "description": "Swish the tail to one side.",
+                    "parameters": {
+                        "angle": {
+                            "type": "float",
+                            "default": 30.0,
+                            "description": "The angle of the tail swish."
+                        },
+                         "direction": {
+                            "type": "string",
+                            "default": "right",
+                            "options": ["left", "right"],
+                            "description": "The direction of the tail swish."
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "separate_extraction",
+                            "parameters": { "mesh": "input_mesh", "region": "tail" },
+                            "output": [ "body_mesh", "tail_mesh" ]
+                        },
+                        {
+                            "operation": "calculate_pivot_point",
+                            "parameters": { "mesh": "tail_mesh", "pivot_type": "tail_base" },
+                            "output": "pivot_point"
+                        },
+                        {
+                            "operation": "calculate_rotation_axis",
+                            "parameters": { "mesh": "tail_mesh", "axis_type": "vertical_axis" },
+                            "output": "rotation_axis"
+                        },
+                        {
+                            "operation": "adjust_angle_by_direction",
+                            "parameters": { "angle": "{angle}", "direction": "{direction}" },
+                            "output": "final_angle"
+                        },
+                        {
+                            "operation": "rotate_mesh_around_pivot",
+                            "parameters": { "mesh": "tail_mesh", "angle": "final_angle", "pivot": "pivot_point", "axis": "rotation_axis" },
+                            "output": "swished_tail"
+                        },
+                        {
+                            "operation": "combine_meshes",
+                            "parameters": { "meshes": [ "body_mesh", "swished_tail" ] },
+                            "output": "result_mesh"
+                        }
+                    ]
+                }
+            }
+        }
+    }
+}
