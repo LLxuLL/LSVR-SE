@@ -123,5 +123,3 @@ For questions, contact:
 - **Metaverse Content Creation**: Language-driven 3D scene generation and editing.
 
 ---
-
-*This work was supported by the Beijing University of Posts and Telecommunications.*
