@@ -1,6 +1,6 @@
 # LSVR-SE: Language-Guided Single-View Reconstruction with Semantic Editing
 
-![Framework Overview](assets/overview.png)  
+![Framework Overview](overview.png)  
 *Figure: Overview of the LSVR-SE framework integrating language-guided reconstruction and semantic editing.*
 
 **LSVR-SE** is an end-to-end differentiable framework for high-fidelity 3D reconstruction and semantically controllable editing from a single image and natural language instructions. It introduces a novel **language-vision-geometry tri-perspective coupling** mechanism, enabling real-time responsive editing such as "add a window" or "replace material" while ensuring topological and physical consistency.  
