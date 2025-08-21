@@ -91,7 +91,6 @@ If you use LSVR-SE in your research, please cite our paper:
 @article{xu2024lsvrse,
   title={LSVR-SE: Language-Guided Single-View Reconstruction with Semantic Editing},
   author={Xu, Maoyang and Qi, Guanglei and He, Nana},
-  journal={arXiv preprint arXiv:XXXX.XXXXX},
   year={2024}
 }
 ```
