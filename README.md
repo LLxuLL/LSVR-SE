@@ -88,11 +88,7 @@ python train.py --config configs/lsvr_se.yaml --data_dir /path/to/dataset
 If you use LSVR-SE in your research, please cite our paper:
 
 ```bibtex
-@article{xu2024lsvrse,
-  title={LSVR-SE: Language-Guided Single-View Reconstruction with Semantic Editing},
-  author={Xu, Maoyang and Qi, Guanglei and He, Nana},
-  year={2024}
-}
+
 ```
 
 ---
@@ -109,8 +105,9 @@ Datasets are used under their respective licenses.
 We welcome contributions! Please open an issue or submit a pull request for any improvements.  
 For questions, contact:  
 - Maoyang Xu: 18810775071@163.com  
-- Guanglei Qi: qiguanglei@ccbupt.cn  
-- Nana He: henana@ccbupt.cn
+- Guanglei Qi 
+- Nana He
+- FuJiao Ju
 
 ---
 
