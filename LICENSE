@@ -27,6 +27,7 @@ You may obtain a copy of the License at
 
 https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode
 
-Copyright (c) 2024 Maoyang Xu, Guanglei Qi, Nana He. Beijing University of Posts and Telecommunications.
+Copyright (c) 2024 Maoyang Xu, Guanglei Qi, Nana He, Fujiao Ju. Beijing University of Posts and Telecommunications.
+
 
 The datasets used in this work (DTU, Objaverse-LVIS, ShapeNetCore.v2, FaceScape) are subject to their respective licenses as cited in the accompanying publication. The custom LSVR-BIM dataset is also made available under this same CC BY-NC-SA 4.0 license.
