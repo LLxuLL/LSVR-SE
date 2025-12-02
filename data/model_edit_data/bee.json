@@ -1,0 +1,368 @@
+{
+    "bee": {
+        "name": "bee",
+        "description": "Bee model editing configuration",
+        "operations": {
+            "common": {
+                "add": {
+                    "description": "Add a new bee",
+                    "parameters": {
+                        "direction": {
+                            "type": "string",
+                            "default": "right",
+                            "options": [
+                                "left",
+                                "right",
+                                "up",
+                                "down",
+                                "front",
+                                "back"
+                            ],
+                            "description": "Add directions"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "copy_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh"
+                            },
+                            "output": "copied_mesh"
+                        },
+                        {
+                            "operation": "get_bounds",
+                            "parameters": {
+                                "mesh": "input_mesh"
+                            },
+                            "output": "bounds"
+                        },
+                        {
+                            "operation": "calculate_translation_vector",
+                            "parameters": {
+                                "direction": "{direction}",
+                                "bounds": "bounds"
+                            },
+                            "output": "translation"
+                        },
+                        {
+                            "operation": "translate_mesh",
+                            "parameters": {
+                                "mesh": "copied_mesh",
+                                "vector": "translation"
+                            },
+                            "output": "translated_mesh"
+                        },
+                        {
+                            "operation": "combine_meshes",
+                            "parameters": {
+                                "meshes": [
+                                    "input_mesh",
+                                    "translated_mesh"
+                                ]
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "rotate": {
+                    "description": "Rotating model",
+                    "parameters": {
+                        "angle": {
+                            "type": "float",
+                            "default": 90.0,
+                            "description": "Rotation angle (degrees)"
+                        },
+                        "axis": {
+                            "type": "string",
+                            "default": "y",
+                            "options": [
+                                "x",
+                                "y",
+                                "z"
+                            ],
+                            "description": "Rotation axis"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "rotate_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "angle": "{angle}",
+                                "axis": "{axis}"
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "translate": {
+                    "description": "Translation model",
+                    "parameters": {
+                        "vector": {
+                            "type": "array",
+                            "default": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "description": "Translation vector"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "translate_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "vector": "{vector}"
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "scale": {
+                    "description": "Scaling model",
+                    "parameters": {
+                        "factor": {
+                            "type": "float",
+                            "default": 1.0,
+                            "description": "Scaling factor"
+                        },
+                        "center": {
+                            "type": "string",
+                            "default": "center",
+                            "options": [
+                                "origin",
+                                "center"
+                            ],
+                            "description": "Zoom Center"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "calculate_scale_center",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "center_type": "{center}"
+                            },
+                            "output": "scale_center"
+                        },
+                        {
+                            "operation": "scale_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "factor": "{factor}",
+                                "center": "scale_center"
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                }
+            },
+            "specific": {
+                "flap_wings": {
+                    "description": "Animate the bee's wings flapping.",
+                    "parameters": {
+                        "angle": {
+                            "type": "float",
+                            "default": 30.0,
+                            "description": "The angle to flap the wings up or down."
+                        },
+                        "wing_ratio": {
+                            "type": "float",
+                            "default": 0.1,
+                            "description": "Ratio of the wings to the whole body."
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "separate_extraction",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "ratio": "{wing_ratio}",
+                                "based_on": "wings_section"
+                            },
+                            "output": [
+                                "body_mesh",
+                                "wings_mesh"
+                            ]
+                        },
+                        {
+                            "operation": "calculate_pivot_point",
+                            "parameters": {
+                                "mesh": "wings_mesh",
+                                "pivot_type": "wing_base"
+                            },
+                            "output": "pivot_point"
+                        },
+                        {
+                            "operation": "calculate_rotation_axis",
+                            "parameters": {
+                                "mesh": "wings_mesh",
+                                "axis_type": "horizontal_long"
+                            },
+                            "output": "rotation_axis"
+                        },
+                        {
+                            "operation": "rotate_mesh_around_pivot",
+                            "parameters": {
+                                "mesh": "wings_mesh",
+                                "angle": "{angle}",
+                                "pivot": "pivot_point",
+                                "axis": "rotation_axis"
+                            },
+                            "output": "flapped_wings"
+                        },
+                        {
+                            "operation": "combine_meshes",
+                            "parameters": {
+                                "meshes": [
+                                    "body_mesh",
+                                    "flapped_wings"
+                                ]
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "extend_stinger": {
+                    "description": "Extend the bee's stinger for an attack pose.",
+                    "parameters": {
+                        "distance": {
+                            "type": "float",
+                            "default": 0.05,
+                            "description": "Distance to extend the stinger (relative to model size)."
+                        },
+                        "stinger_ratio": {
+                            "type": "float",
+                            "default": 0.05,
+                            "description": "Ratio of the stinger/abdomen tip."
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "extract_submesh_by_ratio",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "ratio": "{stinger_ratio}",
+                                "based_on": "stinger_section"
+                            },
+                            "output": "stinger_mesh"
+                        },
+                        {
+                            "operation": "extract_inverse_submesh",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "reference": "stinger_mesh"
+                            },
+                            "output": "body_mesh"
+                        },
+                        {
+                            "operation": "calculate_slide_direction",
+                            "parameters": {
+                                "mesh": "stinger_mesh",
+                                "direction_type": "axis_aligned_rear"
+                            },
+                            "output": "sting_direction"
+                        },
+                        {
+                            "operation": "calculate_translation_vector",
+                            "parameters": {
+                                "direction": "sting_direction",
+                                "distance": "{distance}"
+                            },
+                            "output": "translation_vector"
+                        },
+                        {
+                            "operation": "translate_mesh",
+                            "parameters": {
+                                "mesh": "stinger_mesh",
+                                "vector": "translation_vector"
+                            },
+                            "output": "extended_stinger"
+                        },
+                        {
+                            "operation": "combine_meshes",
+                            "parameters": {
+                                "meshes": [
+                                    "body_mesh",
+                                    "extended_stinger"
+                                ]
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "land": {
+                    "description": "Tuck the bee's legs into a landing or pollen-collecting pose.",
+                    "parameters": {
+                        "angle": {
+                            "type": "float",
+                            "default": 45.0,
+                            "description": "Angle to tuck the legs forward."
+                        },
+                        "leg_ratio": {
+                            "type": "float",
+                            "default": 0.1,
+                            "description": "Ratio of the legs to the body."
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "extract_submesh_by_ratio",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "ratio": "{leg_ratio}",
+                                "based_on": "legs_section"
+                            },
+                            "output": "legs_mesh"
+                        },
+                        {
+                            "operation": "extract_inverse_submesh",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "reference": "legs_mesh"
+                            },
+                            "output": "body_mesh"
+                        },
+                        {
+                            "operation": "calculate_pivot_point",
+                            "parameters": {
+                                "mesh": "legs_mesh",
+                                "pivot_type": "hip_joints"
+                            },
+                            "output": "pivot_point"
+                        },
+                        {
+                            "operation": "calculate_rotation_axis",
+                            "parameters": {
+                                "mesh": "legs_mesh",
+                                "axis_type": "horizontal"
+                            },
+                            "output": "rotation_axis"
+                        },
+                        {
+                            "operation": "rotate_mesh_around_pivot",
+                            "parameters": {
+                                "mesh": "legs_mesh",
+                                "angle": "{angle}",
+                                "pivot": "pivot_point",
+                                "axis": "rotation_axis"
+                            },
+                            "output": "tucked_legs"
+                        },
+                        {
+                            "operation": "combine_meshes",
+                            "parameters": {
+                                "meshes": [
+                                    "body_mesh",
+                                    "tucked_legs"
+                                ]
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                }
+            }
+        }
+    }
+}

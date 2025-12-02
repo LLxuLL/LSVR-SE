@@ -1,0 +1,354 @@
+{
+    "bed": {
+        "name": "bed",
+        "description": "Bed model editing configuration",
+        "operations": {
+            "common": {
+                "add": {
+                    "description": "Add a new bed",
+                    "parameters": {
+                        "direction": {
+                            "type": "string",
+                            "default": "right",
+                            "options": [
+                                "left",
+                                "right",
+                                "up",
+                                "down",
+                                "front",
+                                "back"
+                            ],
+                            "description": "Add directions"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "copy_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh"
+                            },
+                            "output": "copied_mesh"
+                        },
+                        {
+                            "operation": "get_bounds",
+                            "parameters": {
+                                "mesh": "input_mesh"
+                            },
+                            "output": "bounds"
+                        },
+                        {
+                            "operation": "calculate_translation_vector",
+                            "parameters": {
+                                "direction": "{direction}",
+                                "bounds": "bounds"
+                            },
+                            "output": "translation"
+                        },
+                        {
+                            "operation": "translate_mesh",
+                            "parameters": {
+                                "mesh": "copied_mesh",
+                                "vector": "translation"
+                            },
+                            "output": "translated_mesh"
+                        },
+                        {
+                            "operation": "combine_meshes",
+                            "parameters": {
+                                "meshes": [
+                                    "input_mesh",
+                                    "translated_mesh"
+                                ]
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "rotate": {
+                    "description": "Rotating model",
+                    "parameters": {
+                        "angle": {
+                            "type": "float",
+                            "default": 90.0,
+                            "description": "Rotation angle (degrees)"
+                        },
+                        "axis": {
+                            "type": "string",
+                            "default": "y",
+                            "options": [
+                                "x",
+                                "y",
+                                "z"
+                            ],
+                            "description": "Rotation axis"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "rotate_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "angle": "{angle}",
+                                "axis": "{axis}"
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "translate": {
+                    "description": "Translation model",
+                    "parameters": {
+                        "vector": {
+                            "type": "array",
+                            "default": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "description": "Translation vector"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "translate_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "vector": "{vector}"
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "scale": {
+                    "description": "Scaling model",
+                    "parameters": {
+                        "factor": {
+                            "type": "float",
+                            "default": 1.0,
+                            "description": "Scaling factor"
+                        },
+                        "center": {
+                            "type": "string",
+                            "default": "center",
+                            "options": [
+                                "origin",
+                                "center"
+                            ],
+                            "description": "Zoom Center"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "calculate_scale_center",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "center_type": "{center}"
+                            },
+                            "output": "scale_center"
+                        },
+                        {
+                            "operation": "scale_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "factor": "{factor}",
+                                "center": "scale_center"
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                }
+            },
+            "specific": {
+                "make_bed": {
+                    "description": "Make the bed (flatten the covers)",
+                    "parameters": {
+                        "flatness_ratio": {
+                            "type": "float",
+                            "default": 0.5,
+                            "description": "How flat to make the covers (e.g., 0.5 is half height)."
+                        },
+                        "covers_ratio": {
+                            "type": "float",
+                            "default": 0.4,
+                            "description": "The ratio of the covers mesh to the whole bed."
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "extract_submesh_by_ratio",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "ratio": "{covers_ratio}",
+                                "based_on": "covers_section"
+                            },
+                            "output": "covers_mesh"
+                        },
+                        {
+                            "operation": "extract_inverse_submesh",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "reference": "covers_mesh"
+                            },
+                            "output": "frame_and_mattress"
+                        },
+                        {
+                            "operation": "calculate_scale_center",
+                            "parameters": {
+                                "mesh": "covers_mesh",
+                                "center_type": "center"
+                            },
+                            "output": "covers_center"
+                        },
+                        {
+                            "operation": "scale_mesh",
+                            "parameters": {
+                                "mesh": "covers_mesh",
+                                "factor": [1.0, 1.0, "{flatness_ratio}"],
+                                "center": "covers_center"
+                            },
+                            "output": "flat_covers"
+                        },
+                        {
+                            "operation": "combine_meshes",
+                            "parameters": {
+                                "meshes": [
+                                    "frame_and_mattress",
+                                    "flat_covers"
+                                ]
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "fold_duvet_corner": {
+                    "description": "Fold a corner of the duvet",
+                    "parameters": {
+                        "angle": {
+                            "type": "float",
+                            "default": 135.0,
+                            "description": "The angle to fold the corner."
+                        },
+                        "corner": {
+                            "type": "string",
+                            "default": "foot_right",
+                            "options": ["foot_right", "foot_left", "head_right", "head_left"],
+                            "description": "Which corner to fold."
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "separate_extraction",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "region": "{corner}"
+                            },
+                            "output": "duvet_corner_mesh"
+                        },
+                        {
+                            "operation": "extract_inverse_submesh",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "reference": "duvet_corner_mesh"
+                            },
+                            "output": "main_bed_mesh"
+                        },
+                        {
+                            "operation": "calculate_pivot_point",
+                            "parameters": {
+                                "mesh": "duvet_corner_mesh",
+                                "pivot_type": "crease_line_center"
+                            },
+                            "output": "fold_pivot"
+                        },
+                        {
+                            "operation": "calculate_rotation_axis",
+                            "parameters": {
+                                "mesh": "duvet_corner_mesh",
+                                "axis_type": "crease_line_axis"
+                            },
+                            "output": "fold_axis"
+                        },
+                        {
+                            "operation": "rotate_mesh_around_pivot",
+                            "parameters": {
+                                "mesh": "duvet_corner_mesh",
+                                "angle": "{angle}",
+                                "pivot": "fold_pivot",
+                                "axis": "fold_axis"
+                            },
+                            "output": "folded_corner"
+                        },
+                        {
+                            "operation": "combine_meshes",
+                            "parameters": {
+                                "meshes": [ "main_bed_mesh", "folded_corner" ]
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "fluff_pillows": {
+                    "description": "Make the pillows look fuller by scaling them up slightly.",
+                    "parameters": {
+                        "fluff_factor": {
+                            "type": "float",
+                            "default": 1.15,
+                            "description": "The scaling factor for the pillows (e.g., 1.15 is 15% larger)."
+                        },
+                        "pillow_ratio": {
+                            "type": "float",
+                            "default": 0.1,
+                            "description": "The ratio of the pillow mesh to the whole bed."
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "extract_submesh_by_ratio",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "ratio": "{pillow_ratio}",
+                                "based_on": "pillow_section"
+                            },
+                            "output": "pillows_mesh"
+                        },
+                        {
+                            "operation": "extract_inverse_submesh",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "reference": "pillows_mesh"
+                            },
+                            "output": "bed_base_mesh"
+                        },
+                        {
+                            "operation": "calculate_scale_center",
+                            "parameters": {
+                                "mesh": "pillows_mesh",
+                                "center_type": "center"
+                            },
+                            "output": "pillows_center"
+                        },
+                        {
+                            "operation": "scale_mesh",
+                            "parameters": {
+                                "mesh": "pillows_mesh",
+                                "factor": "{fluff_factor}",
+                                "center": "pillows_center"
+                            },
+                            "output": "fluffed_pillows"
+                        },
+                        {
+                            "operation": "combine_meshes",
+                            "parameters": {
+                                "meshes": [
+                                    "bed_base_mesh",
+                                    "fluffed_pillows"
+                                ]
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                }
+            }
+        }
+    }
+}

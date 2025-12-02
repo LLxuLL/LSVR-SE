@@ -1,0 +1,355 @@
+{
+  "aquarium_fish": {
+    "name": "aquarium_fish",
+    "description": "Aquarium fish model editing configuration",
+    "operations": {
+      "common": {
+        "bend_body": {
+          "description": "Bend the fish body to simulate swimming motion",
+          "parameters": {
+            "angle": {
+              "type": "float",
+              "default": 30.0,
+              "description": "Bending angle in degrees"
+            },
+            "direction": {
+              "type": "string",
+              "default": "right",
+              "options": ["left", "right"],
+              "description": "Bending direction"
+            },
+            "bend_point": {
+              "type": "string",
+              "default": "middle",
+              "options": ["head", "middle", "tail"],
+              "description": "Point where bending occurs"
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "copy_mesh",
+              "parameters": {
+                "mesh": "input_mesh"
+              },
+              "output": "original_mesh"
+            },
+            {
+              "operation": "get_bounds",
+              "parameters": {
+                "mesh": "original_mesh"
+              },
+              "output": "bounds"
+            },
+            {
+              "operation": "calculate_bend_segment",
+              "parameters": {
+                "bounds": "bounds",
+                "bend_point": "{bend_point}"
+              },
+              "output": "bend_segment"
+            },
+            {
+              "operation": "calculate_bend_axis",
+              "parameters": {
+                "direction": "{direction}"
+              },
+              "output": "bend_axis"
+            },
+            {
+              "operation": "bend_mesh_segment",
+              "parameters": {
+                "mesh": "original_mesh",
+                "angle": "{angle}",
+                "axis": "bend_axis",
+                "segment": "bend_segment"
+              },
+              "output": "bent_mesh"
+            },
+            {
+              "operation": "smooth_bend_transition",
+              "parameters": {
+                "mesh": "bent_mesh",
+                "bend_segment": "bend_segment"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "adjust_fins": {
+          "description": "Adjust the position and angle of fish fins",
+          "parameters": {
+            "fin_type": {
+              "type": "string",
+              "default": "dorsal",
+              "options": ["dorsal", "pectoral", "pelvic", "anal", "caudal"],
+              "description": "Type of fin to adjust"
+            },
+            "angle": {
+              "type": "float",
+              "default": 15.0,
+              "description": "Fin angle adjustment"
+            },
+            "position_offset": {
+              "type": "vector3",
+              "default": [0.0, 0.0, 0.0],
+              "description": "Position offset for the fin"
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "identify_fin_component",
+              "parameters": {
+                "mesh": "input_mesh",
+                "fin_type": "{fin_type}"
+              },
+              "output": "fin_mesh"
+            },
+            {
+              "operation": "calculate_fin_pivot",
+              "parameters": {
+                "mesh": "fin_mesh"
+              },
+              "output": "pivot_point"
+            },
+            {
+              "operation": "rotate_mesh_around_pivot",
+              "parameters": {
+                "mesh": "fin_mesh",
+                "angle": "{angle}",
+                "axis": [0, 1, 0],
+                "pivot": "pivot_point"
+              },
+              "output": "rotated_fin"
+            },
+            {
+              "operation": "translate_mesh",
+              "parameters": {
+                "mesh": "rotated_fin",
+                "vector": "{position_offset}"
+              },
+              "output": "adjusted_fin"
+            },
+            {
+              "operation": "reintegrate_component",
+              "parameters": {
+                "base_mesh": "input_mesh",
+                "component_mesh": "adjusted_fin",
+                "original_component": "fin_mesh"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "scale": {
+          "description": "Scale the fish model",
+          "parameters": {
+            "factor": {
+              "type": "float",
+              "default": 1.0,
+              "description": "Scaling factor"
+            },
+            "center": {
+              "type": "string",
+              "default": "center",
+              "options": ["origin", "center", "head"],
+              "description": "Scaling center point"
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "calculate_scale_center",
+              "parameters": {
+                "mesh": "input_mesh",
+                "center_type": "{center}"
+              },
+              "output": "scale_center"
+            },
+            {
+              "operation": "scale_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "factor": "{factor}",
+                "center": "scale_center"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "rotate": {
+          "description": "Rotate the fish model",
+          "parameters": {
+            "angle": {
+              "type": "float",
+              "default": 45.0,
+              "description": "Rotation angle"
+            },
+            "axis": {
+              "type": "string",
+              "default": "y",
+              "options": ["x", "y", "z"],
+              "description": "Rotation axis"
+            },
+            "pivot": {
+              "type": "string",
+              "default": "center",
+              "options": ["center", "head", "tail"],
+              "description": "Rotation pivot point"
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "calculate_pivot_point",
+              "parameters": {
+                "mesh": "input_mesh",
+                "pivot_type": "{pivot}"
+              },
+              "output": "pivot_point"
+            },
+            {
+              "operation": "rotate_mesh_around_pivot",
+              "parameters": {
+                "mesh": "input_mesh",
+                "angle": "{angle}",
+                "axis": "{axis}",
+                "pivot": "pivot_point"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        }
+      },
+      "specific": {
+        "swimming_pose": {
+          "description": "Create a natural swimming pose for the fish",
+          "parameters": {
+            "intensity": {
+              "type": "float",
+              "default": 0.5,
+              "min": 0.0,
+              "max": 1.0,
+              "description": "Swimming motion intensity"
+            },
+            "tail_bend": {
+              "type": "float",
+              "default": 25.0,
+              "description": "Tail bending angle"
+            },
+            "body_curve": {
+              "type": "float",
+              "default": 15.0,
+              "description": "Body curvature"
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "copy_mesh",
+              "parameters": {
+                "mesh": "input_mesh"
+              },
+              "output": "original_mesh"
+            },
+            {
+              "operation": "calculate_swimming_parameters",
+              "parameters": {
+                "intensity": "{intensity}",
+                "tail_bend": "{tail_bend}",
+                "body_curve": "{body_curve}"
+              },
+              "output": "swim_params"
+            },
+            {
+              "operation": "apply_body_curve",
+              "parameters": {
+                "mesh": "original_mesh",
+                "curve_amount": "swim_params.body_curve"
+              },
+              "output": "curved_body"
+            },
+            {
+              "operation": "bend_tail",
+              "parameters": {
+                "mesh": "curved_body",
+                "angle": "swim_params.tail_bend"
+              },
+              "output": "bent_tail_mesh"
+            },
+            {
+              "operation": "adjust_fins_for_swimming",
+              "parameters": {
+                "mesh": "bent_tail_mesh",
+                "intensity": "{intensity}"
+              },
+              "output": "swimming_mesh"
+            },
+            {
+              "operation": "smooth_swimming_transitions",
+              "parameters": {
+                "mesh": "swimming_mesh"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "change_species_style": {
+          "description": "Modify the fish to resemble different species characteristics",
+          "parameters": {
+            "species": {
+              "type": "string",
+              "default": "angelfish",
+              "options": ["angelfish", "guppy", "goldfish", "betta", "neon_tetra"],
+              "description": "Target fish species style"
+            },
+            "intensity": {
+              "type": "float",
+              "default": 0.7,
+              "min": 0.0,
+              "max": 1.0,
+              "description": "Transformation intensity"
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "copy_mesh",
+              "parameters": {
+                "mesh": "input_mesh"
+              },
+              "output": "original_mesh"
+            },
+            {
+              "operation": "get_species_template",
+              "parameters": {
+                "species": "{species}"
+              },
+              "output": "species_template"
+            },
+            {
+              "operation": "morph_towards_template",
+              "parameters": {
+                "mesh": "original_mesh",
+                "template": "species_template",
+                "intensity": "{intensity}"
+              },
+              "output": "morphed_mesh"
+            },
+            {
+              "operation": "adjust_fin_proportions",
+              "parameters": {
+                "mesh": "morphed_mesh",
+                "species": "{species}"
+              },
+              "output": "proportional_mesh"
+            },
+            {
+              "operation": "apply_species_coloration",
+              "parameters": {
+                "mesh": "proportional_mesh",
+                "species": "{species}"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,282 @@
+{
+    "bowl": {
+        "name": "bowl",
+        "description": "Bowl model editing configuration",
+        "operations": {
+            "common": {
+                "add": {
+                    "description": "Add a new bowl",
+                    "parameters": {
+                        "direction": {
+                            "type": "string",
+                            "default": "right",
+                            "options": [
+                                "left",
+                                "right",
+                                "up",
+                                "down",
+                                "front",
+                                "back"
+                            ],
+                            "description": "Add directions"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "copy_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh"
+                            },
+                            "output": "copied_mesh"
+                        },
+                        {
+                            "operation": "get_bounds",
+                            "parameters": {
+                                "mesh": "input_mesh"
+                            },
+                            "output": "bounds"
+                        },
+                        {
+                            "operation": "calculate_translation_vector",
+                            "parameters": {
+                                "direction": "{direction}",
+                                "bounds": "bounds"
+                            },
+                            "output": "translation"
+                        },
+                        {
+                            "operation": "translate_mesh",
+                            "parameters": {
+                                "mesh": "copied_mesh",
+                                "vector": "translation"
+                            },
+                            "output": "translated_mesh"
+                        },
+                        {
+                            "operation": "combine_meshes",
+                            "parameters": {
+                                "meshes": [
+                                    "input_mesh",
+                                    "translated_mesh"
+                                ]
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "rotate": {
+                    "description": "Rotating model",
+                    "parameters": {
+                        "angle": {
+                            "type": "float",
+                            "default": 90.0,
+                            "description": "Rotation angle (degrees)"
+                        },
+                        "axis": {
+                            "type": "string",
+                            "default": "y",
+                            "options": [
+                                "x",
+                                "y",
+                                "z"
+                            ],
+                            "description": "Rotation axis"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "rotate_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "angle": "{angle}",
+                                "axis": "{axis}"
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "translate": {
+                    "description": "Translation model",
+                    "parameters": {
+                        "vector": {
+                            "type": "array",
+                            "default": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "description": "Translation vector"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "translate_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "vector": "{vector}"
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "scale": {
+                    "description": "Scaling model",
+                    "parameters": {
+                        "factor": {
+                            "type": "float",
+                            "default": 1.0,
+                            "description": "Scaling factor"
+                        },
+                        "center": {
+                            "type": "string",
+                            "default": "center",
+                            "options": [
+                                "origin",
+                                "center"
+                            ],
+                            "description": "Zoom Center"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "calculate_scale_center",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "center_type": "{center}"
+                            },
+                            "output": "scale_center"
+                        },
+                        {
+                            "operation": "scale_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "factor": "{factor}",
+                                "center": "scale_center"
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                }
+            },
+            "specific": {
+                "fill": {
+                    "description": "Fill the bowl with content (e.g., liquid, solids).",
+                    "parameters": {
+                        "fill_level": {
+                            "type": "float",
+                            "default": 0.8,
+                            "description": "How full to make the bowl (0.0 to 1.0)."
+                        },
+                        "content_type": {
+                            "type": "string",
+                            "default": "liquid",
+                            "options": [ "liquid", "solid_chunks" ],
+                            "description": "The type of content to generate."
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "create_content_mesh",
+                            "parameters": {
+                                "container_mesh": "input_mesh",
+                                "level": "{fill_level}",
+                                "type": "{content_type}"
+                            },
+                            "output": "content_mesh"
+                        },
+                        {
+                            "operation": "combine_meshes",
+                            "parameters": {
+                                "meshes": [
+                                    "input_mesh",
+                                    "content_mesh"
+                                ]
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "tilt": {
+                    "description": "Tilt the bowl, as if to tip it over.",
+                    "parameters": {
+                        "angle": {
+                            "type": "float",
+                            "default": 45.0,
+                            "description": "The angle to tilt the bowl."
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "calculate_pivot_point",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "pivot_type": "base_edge"
+                            },
+                            "output": "pivot_point"
+                        },
+                        {
+                            "operation": "calculate_rotation_axis",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "axis_type": "horizontal_axis"
+                            },
+                            "output": "rotation_axis"
+                        },
+                        {
+                            "operation": "rotate_mesh_around_pivot",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "angle": "{angle}",
+                                "pivot": "pivot_point",
+                                "axis": "rotation_axis"
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "stack": {
+                    "description": "Stack multiple bowls on top of each other.",
+                    "parameters": {
+                        "count": {
+                            "type": "integer",
+                            "default": 3,
+                            "description": "Total number of bowls in the stack."
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "get_bounds",
+                            "parameters": {
+                                "mesh": "input_mesh"
+                            },
+                            "output": "bounds"
+                        },
+                        {
+                            "operation": "calculate_stacking_vector",
+                            "parameters": {
+                                "bounds": "bounds"
+                            },
+                            "output": "stack_vector"
+                        },
+                        {
+                            "operation": "create_stacked_copies",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "count": "{count}",
+                                "vector": "stack_vector"
+                            },
+                            "output": "stacked_bowls"
+                        },
+                        {
+                            "operation": "combine_meshes",
+                            "parameters": {
+                                "meshes": "stacked_bowls"
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                }
+            }
+        }
+    }
+}
