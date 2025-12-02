@@ -1,0 +1,27 @@
+2025-12-01 19:23:12,509 - LSVR-SE - INFO - Initializing LSVR-SE components...
+2025-12-01 19:23:14,006 - LSVR-SE - INFO - HSDE initialized successfully
+2025-12-01 19:28:29,584 - LSVR-SE - INFO - Initializing LSVR-SE components...
+2025-12-01 19:28:31,123 - LSVR-SE - INFO - HSDE initialized successfully
+2025-12-01 19:36:25,936 - LSVR-SE - INFO - Initializing LSVR-SE components...
+2025-12-01 19:36:27,386 - LSVR-SE - INFO - HSDE initialized successfully
+2025-12-01 19:38:12,917 - LSVR-SE - ERROR - Failed to initialize components: 'CLIPTextModel' object has no attribute 'encoder'
+2025-12-01 19:41:55,096 - LSVR-SE - INFO - Initializing LSVR-SE components...
+2025-12-01 19:41:56,574 - LSVR-SE - INFO - HSDE initialized successfully
+2025-12-01 19:41:58,253 - LSVR-SE - INFO - LC-NeRF initialized successfully
+2025-12-01 19:41:58,264 - LSVR-SE - ERROR - Failed to initialize components: linalg.vector_norm: Expected a floating point or complex tensor as input. Got Long
+2025-12-01 19:44:11,754 - LSVR-SE - INFO - Initializing LSVR-SE components...
+2025-12-01 19:44:13,168 - LSVR-SE - INFO - HSDE initialized successfully
+2025-12-01 19:44:14,784 - LSVR-SE - INFO - LC-NeRF initialized successfully
+2025-12-01 19:44:14,787 - LSVR-SE - INFO - DPEE initialized successfully
+2025-12-01 19:53:36,140 - LSVR-SE - INFO - Initializing LSVR-SE components...
+2025-12-01 19:53:37,590 - LSVR-SE - INFO - HSDE initialized successfully
+2025-12-01 19:53:39,874 - LSVR-SE - INFO - LC-NeRF initialized successfully
+2025-12-01 19:53:39,876 - LSVR-SE - INFO - DPEE initialized successfully
+2025-12-01 19:57:44,441 - LSVR-SE - INFO - Initializing LSVR-SE components...
+2025-12-01 19:57:45,906 - LSVR-SE - INFO - HSDE initialized successfully
+2025-12-01 19:57:47,314 - LSVR-SE - INFO - LC-NeRF initialized successfully
+2025-12-01 19:57:47,315 - LSVR-SE - INFO - DPEE initialized successfully
+2025-12-01 20:33:35,042 - LSVR-SE - INFO - Initializing LSVR-SE components...
+2025-12-01 20:33:36,484 - LSVR-SE - INFO - HSDE initialized successfully
+2025-12-01 20:33:43,875 - LSVR-SE - INFO - LC-NeRF initialized successfully
+2025-12-01 20:33:43,877 - LSVR-SE - INFO - DPEE initialized successfully
