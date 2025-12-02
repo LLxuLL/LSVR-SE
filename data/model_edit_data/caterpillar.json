@@ -1,0 +1,246 @@
+{
+    "caterpillar": {
+        "name": "caterpillar",
+        "description": "Caterpillar model editing configuration",
+        "operations": {
+            "common": {
+                "add": {
+                    "description": "Add a new caterpillar",
+                    "parameters": {
+                        "direction": {
+                            "type": "string",
+                            "default": "right",
+                            "options": [
+                                "left",
+                                "right",
+                                "up",
+                                "down",
+                                "front",
+                                "back"
+                            ],
+                            "description": "Add directions"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "copy_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh"
+                            },
+                            "output": "copied_mesh"
+                        },
+                        {
+                            "operation": "get_bounds",
+                            "parameters": {
+                                "mesh": "input_mesh"
+                            },
+                            "output": "bounds"
+                        },
+                        {
+                            "operation": "calculate_translation_vector",
+                            "parameters": {
+                                "direction": "{direction}",
+                                "bounds": "bounds"
+                            },
+                            "output": "translation"
+                        },
+                        {
+                            "operation": "translate_mesh",
+                            "parameters": {
+                                "mesh": "copied_mesh",
+                                "vector": "translation"
+                            },
+                            "output": "translated_mesh"
+                        },
+                        {
+                            "operation": "combine_meshes",
+                            "parameters": {
+                                "meshes": [
+                                    "input_mesh",
+                                    "translated_mesh"
+                                ]
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "rotate": {
+                    "description": "Rotating model",
+                    "parameters": {
+                        "angle": {
+                            "type": "float",
+                            "default": 90.0,
+                            "description": "Rotation angle (degrees)"
+                        },
+                        "axis": {
+                            "type": "string",
+                            "default": "y",
+                            "options": [
+                                "x",
+                                "y",
+                                "z"
+                            ],
+                            "description": "Rotation axis"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "rotate_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "angle": "{angle}",
+                                "axis": "{axis}"
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "translate": {
+                    "description": "Translation model",
+                    "parameters": {
+                        "vector": {
+                            "type": "array",
+                            "default": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "description": "Translation vector"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "translate_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "vector": "{vector}"
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "scale": {
+                    "description": "Scaling model",
+                    "parameters": {
+                        "factor": {
+                            "type": "float",
+                            "default": 1.0,
+                            "description": "Scaling factor"
+                        },
+                        "center": {
+                            "type": "string",
+                            "default": "center",
+                            "options": [
+                                "origin",
+                                "center"
+                            ],
+                            "description": "Zoom Center"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "calculate_scale_center",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "center_type": "{center}"
+                            },
+                            "output": "scale_center"
+                        },
+                        {
+                            "operation": "scale_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "factor": "{factor}",
+                                "center": "scale_center"
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                }
+            },
+            "specific": {
+                "crawl": {
+                    "description": "Simulate the caterpillar's inching forward movement by arching its body.",
+                    "parameters": {
+                        "arch_height": {
+                            "type": "float",
+                            "default": 0.3,
+                            "description": "The height of the body arch, as a ratio of the caterpillar's length."
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "bend_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "axis": "y",
+                                "angle": 0,
+                                "arch_factor": "{arch_height}"
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "curl_up": {
+                    "description": "Curl the caterpillar into a defensive C-shape.",
+                    "parameters": {
+                        "angle": {
+                            "type": "float",
+                            "default": 180.0,
+                            "description": "The angle of the curl, where 360 would be a full circle."
+                        }
+                    },
+                    "atomic_operations": [
+                         {
+                            "operation": "bend_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "axis": "y",
+                                "angle": "{angle}",
+                                "arch_factor": 0
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "chew": {
+                    "description": "Simulate a chewing motion with the mandibles.",
+                    "parameters": {
+                        "open_angle": {
+                            "type": "float",
+                            "default": 15.0,
+                            "description": "Angle to open the mandibles."
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "separate_extraction",
+                            "parameters": { "mesh": "input_mesh", "region": "mandibles" },
+                            "output": [ "main_body", "mandibles_mesh" ]
+                        },
+                        {
+                            "operation": "calculate_pivot_point",
+                            "parameters": { "mesh": "mandibles_mesh", "pivot_type": "jaw_hinge" },
+                            "output": "pivot_point"
+                        },
+                        {
+                            "operation": "calculate_rotation_axis",
+                            "parameters": { "mesh": "mandibles_mesh", "axis_type": "horizontal_axis" },
+                            "output": "rotation_axis"
+                        },
+                        {
+                            "operation": "rotate_mesh_around_pivot",
+                            "parameters": { "mesh": "mandibles_mesh", "angle": "{open_angle}", "pivot": "pivot_point", "axis": "rotation_axis" },
+                            "output": "chewing_mandibles"
+                        },
+                        {
+                            "operation": "combine_meshes",
+                            "parameters": { "meshes": [ "main_body", "chewing_mandibles" ] },
+                            "output": "result_mesh"
+                        }
+                    ]
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,268 @@
+{
+    "can": {
+        "name": "can",
+        "description": "Can (e.g., soda can) model editing configuration",
+        "operations": {
+            "common": {
+                "add": {
+                    "description": "Add a new can",
+                    "parameters": {
+                        "direction": {
+                            "type": "string",
+                            "default": "right",
+                            "options": [
+                                "left",
+                                "right",
+                                "up",
+                                "down",
+                                "front",
+                                "back"
+                            ],
+                            "description": "Add directions"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "copy_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh"
+                            },
+                            "output": "copied_mesh"
+                        },
+                        {
+                            "operation": "get_bounds",
+                            "parameters": {
+                                "mesh": "input_mesh"
+                            },
+                            "output": "bounds"
+                        },
+                        {
+                            "operation": "calculate_translation_vector",
+                            "parameters": {
+                                "direction": "{direction}",
+                                "bounds": "bounds"
+                            },
+                            "output": "translation"
+                        },
+                        {
+                            "operation": "translate_mesh",
+                            "parameters": {
+                                "mesh": "copied_mesh",
+                                "vector": "translation"
+                            },
+                            "output": "translated_mesh"
+                        },
+                        {
+                            "operation": "combine_meshes",
+                            "parameters": {
+                                "meshes": [
+                                    "input_mesh",
+                                    "translated_mesh"
+                                ]
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "rotate": {
+                    "description": "Rotating model",
+                    "parameters": {
+                        "angle": {
+                            "type": "float",
+                            "default": 90.0,
+                            "description": "Rotation angle (degrees)"
+                        },
+                        "axis": {
+                            "type": "string",
+                            "default": "y",
+                            "options": [
+                                "x",
+                                "y",
+                                "z"
+                            ],
+                            "description": "Rotation axis"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "rotate_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "angle": "{angle}",
+                                "axis": "{axis}"
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "translate": {
+                    "description": "Translation model",
+                    "parameters": {
+                        "vector": {
+                            "type": "array",
+                            "default": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "description": "Translation vector"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "translate_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "vector": "{vector}"
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "scale": {
+                    "description": "Scaling model",
+                    "parameters": {
+                        "factor": {
+                            "type": "float",
+                            "default": 1.0,
+                            "description": "Scaling factor"
+                        },
+                        "center": {
+                            "type": "string",
+                            "default": "center",
+                            "options": [
+                                "origin",
+                                "center"
+                            ],
+                            "description": "Zoom Center"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "calculate_scale_center",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "center_type": "{center}"
+                            },
+                            "output": "scale_center"
+                        },
+                        {
+                            "operation": "scale_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "factor": "{factor}",
+                                "center": "scale_center"
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                }
+            },
+            "specific": {
+                "open_tab": {
+                    "description": "Lift the pull-tab to open the can.",
+                    "parameters": {
+                        "angle": {
+                            "type": "float",
+                            "default": 90.0,
+                            "description": "Angle to lift the pull-tab."
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "separate_extraction",
+                            "parameters": { "mesh": "input_mesh", "region": "pull_tab" },
+                            "output": [ "can_body", "tab_mesh" ]
+                        },
+                        {
+                            "operation": "calculate_pivot_point",
+                            "parameters": { "mesh": "tab_mesh", "pivot_type": "tab_hinge" },
+                            "output": "pivot_point"
+                        },
+                        {
+                            "operation": "calculate_rotation_axis",
+                            "parameters": { "mesh": "tab_mesh", "axis_type": "hinge_axis" },
+                            "output": "rotation_axis"
+                        },
+                        {
+                            "operation": "rotate_mesh_around_pivot",
+                            "parameters": { "mesh": "tab_mesh", "angle": "{angle}", "pivot": "pivot_point", "axis": "rotation_axis" },
+                            "output": "opened_tab"
+                        },
+                        {
+                            "operation": "combine_meshes",
+                            "parameters": { "meshes": [ "can_body", "opened_tab" ] },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "crush": {
+                    "description": "Crush the can along a specific axis.",
+                    "parameters": {
+                        "factor": {
+                            "type": "float",
+                            "default": 0.5,
+                            "description": "Crush amount (0 to 1), where 1 is fully flattened."
+                        },
+                        "axis": {
+                            "type": "string",
+                            "default": "y",
+                            "options": ["x", "y", "z"],
+                            "description": "Axis along which to crush the can."
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "calculate_crush_scale_vector",
+                            "parameters": { "axis": "{axis}", "factor": "{factor}" },
+                            "output": "scale_vector"
+                        },
+                        {
+                            "operation": "calculate_scale_center",
+                            "parameters": { "mesh": "input_mesh", "center_type": "center" },
+                            "output": "scale_center"
+                        },
+                        {
+                            "operation": "scale_mesh",
+                            "parameters": { "mesh": "input_mesh", "factor": "scale_vector", "center": "scale_center" },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "dent": {
+                    "description": "Create a dent on the side of the can.",
+                    "parameters": {
+                        "depth": {
+                            "type": "float",
+                            "default": 0.1,
+                            "description": "Depth of the dent as a ratio of the can's radius."
+                        },
+                        "location": {
+                            "type": "string",
+                            "default": "center_side",
+                            "options": ["top_side", "center_side", "bottom_side"],
+                            "description": "General location on the can's side to create the dent."
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "get_vertices_in_region",
+                            "parameters": { "mesh": "input_mesh", "region": "{location}" },
+                            "output": "dent_vertices_indices"
+                        },
+                        {
+                            "operation": "calculate_dent_vectors",
+                            "parameters": { "mesh": "input_mesh", "indices": "dent_vertices_indices", "depth": "{depth}" },
+                            "output": "vertex_displacements"
+                        },
+                        {
+                            "operation": "displace_vertices",
+                            "parameters": { "mesh": "input_mesh", "displacements": "vertex_displacements" },
+                            "output": "result_mesh"
+                        }
+                    ]
+                }
+            }
+        }
+    }
+}

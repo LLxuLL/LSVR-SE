@@ -1,0 +1,249 @@
+{
+  "dinosaur": {
+    "name": "dinosaur",
+    "description": "Dinosaur model editing configuration. Assumed to be facing along the positive X-axis. For specific operations, it is expected to have named parts like 'body', 'head', 'lower_jaw', and 'tail'.",
+    "operations": {
+      "common": {
+        "add": {
+          "description": "Add a new dinosaur next to the current one.",
+          "parameters": {
+            "direction": {
+              "type": "string",
+              "default": "right",
+              "options": ["left", "right", "up", "down", "front", "back"],
+              "description": "Direction to add the new dinosaur."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "copy_mesh",
+              "parameters": { "mesh": "input_mesh" },
+              "output": "copied_mesh"
+            },
+            {
+              "operation": "get_bounds",
+              "parameters": { "mesh": "input_mesh" },
+              "output": "bounds"
+            },
+            {
+              "operation": "calculate_translation_vector",
+              "parameters": {
+                "direction": "{direction}",
+                "bounds": "bounds"
+              },
+              "output": "translation"
+            },
+            {
+              "operation": "translate_mesh",
+              "parameters": {
+                "mesh": "copied_mesh",
+                "vector": "translation"
+              },
+              "output": "translated_mesh"
+            },
+            {
+              "operation": "combine_meshes",
+              "parameters": {
+                "meshes": ["input_mesh", "translated_mesh"]
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "translate": {
+          "description": "Translate (move) the dinosaur.",
+          "parameters": {
+            "vector": {
+              "type": "list_float",
+              "default": [0.0, 0.0, 0.0],
+              "description": "Translation vector [x, y, z]."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "translate_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "vector": "{vector}"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "rotate": {
+          "description": "Rotate the dinosaur on the spot (around its vertical Y-axis).",
+          "parameters": {
+            "angle": {
+              "type": "float",
+              "default": 10.0,
+              "description": "Turning angle in degrees."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "rotate_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "angle": "{angle}",
+                "axis": [0, 1, 0],
+                "center": "center"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "scale": {
+          "description": "Scale the dinosaur to make it larger or smaller.",
+          "parameters": {
+            "factor": {
+              "type": "float",
+              "default": 1.5,
+              "description": "Uniform scaling factor."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "calculate_scale_center",
+              "parameters": {
+                "mesh": "input_mesh",
+                "center_type": "center"
+              },
+              "output": "scale_center"
+            },
+            {
+              "operation": "scale_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "factor": "{factor}",
+                "center": "scale_center"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        }
+      },
+      "specific": {
+        "roar": {
+          "description": "Tilts the head back and opens the jaw for a mighty roar.",
+          "parameters": {
+            "head_tilt_angle": {
+              "type": "float",
+              "default": 20.0,
+              "description": "The upward angle to tilt the head."
+            },
+            "jaw_open_angle": {
+              "type": "float",
+              "default": 35.0,
+              "description": "The angle to open the lower jaw."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "separate_by_part_names",
+              "parameters": {
+                "mesh": "input_mesh",
+                "part_names": ["body", "head", "lower_jaw"]
+              },
+              "output": ["body_mesh", "head_mesh", "lower_jaw_mesh"]
+            },
+            {
+              "operation": "get_part_pivot",
+              "parameters": { "mesh": "lower_jaw_mesh", "pivot_location": "back" },
+              "output": "jaw_hinge"
+            },
+            {
+              "operation": "rotate_mesh_around_pivot",
+              "parameters": {
+                "mesh": "lower_jaw_mesh",
+                "angle": "-{jaw_open_angle}",
+                "axis": [0, 0, 1],
+                "pivot": "jaw_hinge"
+              },
+              "output": "opened_jaw"
+            },
+            {
+              "operation": "combine_meshes",
+              "parameters": { "meshes": ["head_mesh", "opened_jaw"] },
+              "output": "complete_head_assembly"
+            },
+            {
+              "operation": "get_part_pivot",
+              "parameters": { "mesh": "head_mesh", "pivot_location": "base" },
+              "output": "neck_pivot"
+            },
+            {
+              "operation": "rotate_mesh_around_pivot",
+              "parameters": {
+                "mesh": "complete_head_assembly",
+                "angle": "{head_tilt_angle}",
+                "axis": [0, 0, 1],
+                "pivot": "neck_pivot"
+              },
+              "output": "roaring_head_assembly"
+            },
+            {
+              "operation": "combine_meshes",
+              "parameters": { "meshes": ["body_mesh", "roaring_head_assembly"] },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "tail_whip": {
+          "description": "Whips the tail powerfully to one side.",
+          "parameters": {
+            "angle": {
+              "type": "float",
+              "default": 40.0,
+              "description": "The angle of the tail whip, in degrees."
+            },
+            "direction": {
+              "type": "string",
+              "default": "left",
+              "options": ["left", "right"],
+              "description": "Direction of the whip."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "separate_by_part_names",
+              "parameters": {
+                "mesh": "input_mesh",
+                "part_names": ["body", "tail"]
+              },
+              "output": ["body_mesh", "tail_mesh"]
+            },
+            {
+              "operation": "get_part_pivot",
+              "parameters": { "mesh": "tail_mesh", "pivot_location": "base" },
+              "output": "tail_base"
+            },
+            {
+              "operation": "adjust_angle_by_direction",
+              "parameters": {
+                "angle": "{angle}",
+                "direction": "{direction}",
+                "positive_dir": "left"
+              },
+              "output": "final_angle"
+            },
+            {
+              "operation": "rotate_mesh_around_pivot",
+              "parameters": {
+                "mesh": "tail_mesh",
+                "angle": "final_angle",
+                "axis": [0, 1, 0],
+                "pivot": "tail_base"
+              },
+              "output": "whipped_tail"
+            },
+            {
+              "operation": "combine_meshes",
+              "parameters": { "meshes": ["body_mesh", "whipped_tail"] },
+              "output": "result_mesh"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

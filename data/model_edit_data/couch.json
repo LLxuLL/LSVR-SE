@@ -1,0 +1,236 @@
+{
+  "couch": {
+    "name": "couch",
+    "description": "Couch model editing configuration. Assumed to be oriented along the X-axis. For specific operations, it is expected to have named parts like 'main_body', 'left_recliner_back', 'left_recliner_footrest', 'right_recliner_back', 'right_recliner_footrest', and 'bed_section'.",
+    "operations": {
+      "common": {
+        "add": {
+          "description": "Add a new couch next to the current one.",
+          "parameters": {
+            "direction": {
+              "type": "string",
+              "default": "right",
+              "options": ["left", "right", "up", "down", "front", "back"],
+              "description": "Direction to add the new couch."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "copy_mesh",
+              "parameters": { "mesh": "input_mesh" },
+              "output": "copied_mesh"
+            },
+            {
+              "operation": "get_bounds",
+              "parameters": { "mesh": "input_mesh" },
+              "output": "bounds"
+            },
+            {
+              "operation": "calculate_translation_vector",
+              "parameters": {
+                "direction": "{direction}",
+                "bounds": "bounds"
+              },
+              "output": "translation"
+            },
+            {
+              "operation": "translate_mesh",
+              "parameters": {
+                "mesh": "copied_mesh",
+                "vector": "translation"
+              },
+              "output": "translated_mesh"
+            },
+            {
+              "operation": "combine_meshes",
+              "parameters": {
+                "meshes": ["input_mesh", "translated_mesh"]
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "translate": {
+          "description": "Translate (move) the couch.",
+          "parameters": {
+            "vector": {
+              "type": "list_float",
+              "default": [0.0, 0.0, 0.0],
+              "description": "Translation vector [x, y, z]."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "translate_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "vector": "{vector}"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "rotate": {
+          "description": "Rotate the couch around its vertical axis (Y-axis).",
+          "parameters": {
+            "angle": {
+              "type": "float",
+              "default": 90.0,
+              "description": "Turning angle in degrees."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "rotate_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "angle": "{angle}",
+                "axis": [0, 1, 0],
+                "center": "center"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "scale": {
+          "description": "Scale the couch to make it larger or smaller.",
+          "parameters": {
+            "factor": {
+              "type": "float",
+              "default": 1.05,
+              "description": "Uniform scaling factor."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "calculate_scale_center",
+              "parameters": {
+                "mesh": "input_mesh",
+                "center_type": "center"
+              },
+              "output": "scale_center"
+            },
+            {
+              "operation": "scale_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "factor": "{factor}",
+                "center": "scale_center"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        }
+      },
+      "specific": {
+        "recline": {
+          "description": "Reclines one side of the couch. Assumes the specified side has a 'back' and 'footrest' part.",
+          "parameters": {
+            "side": {
+              "type": "string",
+              "default": "right",
+              "options": ["left", "right"],
+              "description": "Which side of the couch to recline."
+            },
+            "angle": {
+              "type": "float",
+              "default": 40.0,
+              "description": "The angle to recline the backrest. The footrest will move accordingly."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "separate_by_part_names",
+              "parameters": {
+                "mesh": "input_mesh",
+                "part_names": ["main_body", "{side}_recliner_back", "{side}_recliner_footrest"]
+              },
+              "output": ["main_body_mesh", "back_mesh", "footrest_mesh"]
+            },
+            {
+              "operation": "get_part_pivot",
+              "parameters": { "mesh": "back_mesh", "pivot_location": "bottom" },
+              "output": "back_pivot"
+            },
+            {
+              "operation": "get_part_pivot",
+              "parameters": { "mesh": "footrest_mesh", "pivot_location": "back" },
+              "output": "footrest_pivot"
+            },
+            {
+              "operation": "rotate_mesh_around_pivot",
+              "parameters": {
+                "mesh": "back_mesh",
+                "angle": "-{angle}",
+                "axis": [1, 0, 0],
+                "pivot": "back_pivot"
+              },
+              "output": "reclined_back"
+            },
+            {
+              "operation": "rotate_mesh_around_pivot",
+              "parameters": {
+                "mesh": "footrest_mesh",
+                "angle": "({angle} * 2.25)",
+                "axis": [1, 0, 0],
+                "pivot": "footrest_pivot"
+              },
+              "output": "raised_footrest"
+            },
+            {
+              "operation": "combine_meshes",
+              "parameters": {
+                "meshes": ["main_body_mesh", "reclined_back", "raised_footrest"]
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "pull_out_bed": {
+          "description": "Pulls out the integrated sofa bed from the couch frame.",
+          "parameters": {
+            "percent_open": {
+              "type": "float",
+              "default": 100.0,
+              "description": "The percentage to pull the bed section out (0-100)."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "separate_by_part_names",
+              "parameters": {
+                "mesh": "input_mesh",
+                "part_names": ["frame", "bed_section"]
+              },
+              "output": ["frame_mesh", "bed_mesh"]
+            },
+            {
+              "operation": "calculate_slide_distance",
+              "parameters": {
+                "mesh": "bed_mesh",
+                "direction": "front",
+                "percentage": "{percent_open}"
+              },
+              "output": "slide_vector"
+            },
+            {
+              "operation": "translate_mesh",
+              "parameters": {
+                "mesh": "bed_mesh",
+                "vector": "slide_vector"
+              },
+              "output": "extended_bed_mesh"
+            },
+            {
+              "operation": "combine_meshes",
+              "parameters": {
+                "meshes": ["frame_mesh", "extended_bed_mesh"]
+              },
+              "output": "result_mesh"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

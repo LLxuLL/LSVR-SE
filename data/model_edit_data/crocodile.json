@@ -1,0 +1,235 @@
+{
+  "crocodile": {
+    "name": "crocodile",
+    "description": "Crocodile model editing configuration. Assumed to be lying flat on the XZ plane, facing along the positive X-axis. For specific operations, it is expected to have named parts like 'body', 'lower_jaw', and 'tail'.",
+    "operations": {
+      "common": {
+        "add": {
+          "description": "Add a new crocodile next to the current one.",
+          "parameters": {
+            "direction": {
+              "type": "string",
+              "default": "right",
+              "options": ["left", "right", "up", "down", "front", "back"],
+              "description": "Direction to add the new crocodile."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "copy_mesh",
+              "parameters": { "mesh": "input_mesh" },
+              "output": "copied_mesh"
+            },
+            {
+              "operation": "get_bounds",
+              "parameters": { "mesh": "input_mesh" },
+              "output": "bounds"
+            },
+            {
+              "operation": "calculate_translation_vector",
+              "parameters": {
+                "direction": "{direction}",
+                "bounds": "bounds"
+              },
+              "output": "translation"
+            },
+            {
+              "operation": "translate_mesh",
+              "parameters": {
+                "mesh": "copied_mesh",
+                "vector": "translation"
+              },
+              "output": "translated_mesh"
+            },
+            {
+              "operation": "combine_meshes",
+              "parameters": {
+                "meshes": ["input_mesh", "translated_mesh"]
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "translate": {
+          "description": "Translate (move) the crocodile.",
+          "parameters": {
+            "vector": {
+              "type": "list_float",
+              "default": [0.0, 0.0, 0.0],
+              "description": "Translation vector [x, y, z]."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "translate_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "vector": "{vector}"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "rotate": {
+          "description": "Rotate the crocodile on the spot (around its vertical Y-axis).",
+          "parameters": {
+            "angle": {
+              "type": "float",
+              "default": 15.0,
+              "description": "Turning angle in degrees."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "rotate_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "angle": "{angle}",
+                "axis": [0, 1, 0],
+                "center": "center"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "scale": {
+          "description": "Scale the crocodile to make it larger or smaller.",
+          "parameters": {
+            "factor": {
+              "type": "float",
+              "default": 1.1,
+              "description": "Uniform scaling factor."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "calculate_scale_center",
+              "parameters": {
+                "mesh": "input_mesh",
+                "center_type": "center"
+              },
+              "output": "scale_center"
+            },
+            {
+              "operation": "scale_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "factor": "{factor}",
+                "center": "scale_center"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        }
+      },
+      "specific": {
+        "open_mouth": {
+          "description": "Opens the crocodile's lower jaw.",
+          "parameters": {
+            "angle": {
+              "type": "float",
+              "default": 25.0,
+              "description": "The angle to open the jaw, in degrees."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "separate_by_part_names",
+              "parameters": {
+                "mesh": "input_mesh",
+                "part_names": ["body", "lower_jaw"]
+              },
+              "output": ["body_mesh", "lower_jaw_mesh"]
+            },
+            {
+              "operation": "get_part_pivot",
+              "parameters": { "mesh": "lower_jaw_mesh", "pivot_location": "back" },
+              "output": "jaw_hinge"
+            },
+            {
+              "operation": "rotate_mesh_around_pivot",
+              "parameters": {
+                "mesh": "lower_jaw_mesh",
+                "angle": "-{angle}",
+                "axis": [0, 0, 1],
+                "pivot": "jaw_hinge"
+              },
+              "output": "opened_jaw"
+            },
+            {
+              "operation": "combine_meshes",
+              "parameters": {
+                "meshes": ["body_mesh", "opened_jaw"]
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "swish_tail": {
+          "description": "Swishes the crocodile's tail to one side.",
+          "parameters": {
+            "angle": {
+              "type": "float",
+              "default": 30.0,
+              "description": "The angle of the tail swish, in degrees."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "separate_by_part_names",
+              "parameters": {
+                "mesh": "input_mesh",
+                "part_names": ["body", "tail"]
+              },
+              "output": ["body_mesh", "tail_mesh"]
+            },
+            {
+              "operation": "get_part_pivot",
+              "parameters": { "mesh": "tail_mesh", "pivot_location": "base" },
+              "output": "tail_pivot"
+            },
+            {
+              "operation": "rotate_mesh_around_pivot",
+              "parameters": {
+                "mesh": "tail_mesh",
+                "angle": "{angle}",
+                "axis": [0, 1, 0],
+                "pivot": "tail_pivot"
+              },
+              "output": "swished_tail"
+            },
+            {
+              "operation": "combine_meshes",
+              "parameters": {
+                "meshes": ["body_mesh", "swished_tail"]
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "death_roll": {
+          "description": "Performs a rotational spin along its body's longitudinal axis.",
+          "parameters": {
+            "revolutions": {
+              "type": "float",
+              "default": 1.5,
+              "description": "Number of full 360-degree rotations."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "rotate_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "angle": "({revolutions} * 360)",
+                "axis": [1, 0, 0],
+                "center": "center"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

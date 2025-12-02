@@ -1,0 +1,222 @@
+{
+  "cockroach": {
+    "name": "cockroach",
+    "description": "Cockroach model editing configuration. Assumed to be lying flat on the XZ plane, pointing along the positive X-axis. Its body, left_antenna, and right_antenna are separate parts.",
+    "operations": {
+      "common": {
+        "add": {
+          "description": "Add a new cockroach next to the current one.",
+          "parameters": {
+            "direction": {
+              "type": "string",
+              "default": "right",
+              "options": ["left", "right", "up", "down", "front", "back"],
+              "description": "Direction to add the new cockroach."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "copy_mesh",
+              "parameters": { "mesh": "input_mesh" },
+              "output": "copied_mesh"
+            },
+            {
+              "operation": "get_bounds",
+              "parameters": { "mesh": "input_mesh" },
+              "output": "bounds"
+            },
+            {
+              "operation": "calculate_translation_vector",
+              "parameters": {
+                "direction": "{direction}",
+                "bounds": "bounds"
+              },
+              "output": "translation"
+            },
+            {
+              "operation": "translate_mesh",
+              "parameters": {
+                "mesh": "copied_mesh",
+                "vector": "translation"
+              },
+              "output": "translated_mesh"
+            },
+            {
+              "operation": "combine_meshes",
+              "parameters": {
+                "meshes": ["input_mesh", "translated_mesh"]
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "translate": {
+          "description": "Translate (move) the cockroach.",
+          "parameters": {
+            "vector": {
+              "type": "list_float",
+              "default": [0.0, 0.0, 0.0],
+              "description": "Translation vector [x, y, z]."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "translate_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "vector": "{vector}"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "rotate": {
+          "description": "Rotate the cockroach on the spot (around its vertical Y-axis).",
+          "parameters": {
+            "angle": {
+              "type": "float",
+              "default": 45.0,
+              "description": "Turning angle in degrees."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "rotate_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "angle": "{angle}",
+                "axis": [0, 1, 0],
+                "center": "center"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "scale": {
+          "description": "Scale the cockroach to make it larger or smaller.",
+          "parameters": {
+            "factor": {
+              "type": "float",
+              "default": 1.1,
+              "description": "Uniform scaling factor."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "calculate_scale_center",
+              "parameters": {
+                "mesh": "input_mesh",
+                "center_type": "center"
+              },
+              "output": "scale_center"
+            },
+            {
+              "operation": "scale_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "factor": "{factor}",
+                "center": "scale_center"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        }
+      },
+      "specific": {
+        "crawl": {
+          "description": "Moves the cockroach forward along its current direction.",
+          "parameters": {
+            "distance": {
+              "type": "float",
+              "default": 2.0,
+              "description": "Distance to crawl forward."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "translate_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "vector": ["{distance}", 0.0, 0.0]
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "flip_over": {
+          "description": "Flips the cockroach onto its back.",
+          "parameters": {},
+          "atomic_operations": [
+            {
+              "operation": "rotate_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "angle": 180.0,
+                "axis": [1, 0, 0],
+                "center": "center"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "wiggle_antennae": {
+          "description": "Wiggles the cockroach's antennae outward.",
+          "parameters": {
+            "angle": {
+              "type": "float",
+              "default": 20.0,
+              "description": "The angle of the wiggle in degrees."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "separate_by_part_names",
+              "parameters": {
+                "mesh": "input_mesh",
+                "part_names": ["body", "left_antenna", "right_antenna"]
+              },
+              "output": ["body_mesh", "left_antenna_mesh", "right_antenna_mesh"]
+            },
+            {
+              "operation": "get_part_pivot",
+              "parameters": { "mesh": "left_antenna_mesh", "pivot_location": "base" },
+              "output": "left_pivot"
+            },
+            {
+              "operation": "get_part_pivot",
+              "parameters": { "mesh": "right_antenna_mesh", "pivot_location": "base" },
+              "output": "right_pivot"
+            },
+            {
+              "operation": "rotate_mesh",
+              "parameters": {
+                "mesh": "left_antenna_mesh",
+                "angle": "{angle}",
+                "axis": [0, 1, 0],
+                "center": "left_pivot"
+              },
+              "output": "rotated_left_antenna"
+            },
+            {
+              "operation": "rotate_mesh",
+              "parameters": {
+                "mesh": "right_antenna_mesh",
+                "angle": "-{angle}",
+                "axis": [0, 1, 0],
+                "center": "right_pivot"
+              },
+              "output": "rotated_right_antenna"
+            },
+            {
+              "operation": "combine_meshes",
+              "parameters": {
+                "meshes": ["body_mesh", "rotated_left_antenna", "rotated_right_antenna"]
+              },
+              "output": "result_mesh"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

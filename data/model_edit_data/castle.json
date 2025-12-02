@@ -1,0 +1,282 @@
+{
+    "castle": {
+        "name": "castle",
+        "description": "Castle model editing configuration",
+        "operations": {
+            "common": {
+                "add": {
+                    "description": "Add a new castle",
+                    "parameters": {
+                        "direction": {
+                            "type": "string",
+                            "default": "right",
+                            "options": [
+                                "left",
+                                "right",
+                                "up",
+                                "down",
+                                "front",
+                                "back"
+                            ],
+                            "description": "Add directions"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "copy_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh"
+                            },
+                            "output": "copied_mesh"
+                        },
+                        {
+                            "operation": "get_bounds",
+                            "parameters": {
+                                "mesh": "input_mesh"
+                            },
+                            "output": "bounds"
+                        },
+                        {
+                            "operation": "calculate_translation_vector",
+                            "parameters": {
+                                "direction": "{direction}",
+                                "bounds": "bounds"
+                            },
+                            "output": "translation"
+                        },
+                        {
+                            "operation": "translate_mesh",
+                            "parameters": {
+                                "mesh": "copied_mesh",
+                                "vector": "translation"
+                            },
+                            "output": "translated_mesh"
+                        },
+                        {
+                            "operation": "combine_meshes",
+                            "parameters": {
+                                "meshes": [
+                                    "input_mesh",
+                                    "translated_mesh"
+                                ]
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "rotate": {
+                    "description": "Rotating model",
+                    "parameters": {
+                        "angle": {
+                            "type": "float",
+                            "default": 90.0,
+                            "description": "Rotation angle (degrees)"
+                        },
+                        "axis": {
+                            "type": "string",
+                            "default": "y",
+                            "options": [
+                                "x",
+                                "y",
+                                "z"
+                            ],
+                            "description": "Rotation axis"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "rotate_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "angle": "{angle}",
+                                "axis": "{axis}"
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "translate": {
+                    "description": "Translation model",
+                    "parameters": {
+                        "vector": {
+                            "type": "array",
+                            "default": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "description": "Translation vector"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "translate_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "vector": "{vector}"
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "scale": {
+                    "description": "Scaling model",
+                    "parameters": {
+                        "factor": {
+                            "type": "float",
+                            "default": 1.0,
+                            "description": "Scaling factor"
+                        },
+                        "center": {
+                            "type": "string",
+                            "default": "center",
+                            "options": [
+                                "origin",
+                                "center"
+                            ],
+                            "description": "Zoom Center"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "calculate_scale_center",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "center_type": "{center}"
+                            },
+                            "output": "scale_center"
+                        },
+                        {
+                            "operation": "scale_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "factor": "{factor}",
+                                "center": "scale_center"
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                }
+            },
+            "specific": {
+                "operate_drawbridge": {
+                    "description": "Open or close the castle drawbridge.",
+                    "parameters": {
+                        "angle": {
+                            "type": "float",
+                            "default": 90.0,
+                            "description": "Angle to lower the drawbridge from its closed (vertical) position."
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "separate_extraction",
+                            "parameters": { "mesh": "input_mesh", "region": "drawbridge" },
+                            "output": [ "castle_body", "drawbridge_mesh" ]
+                        },
+                        {
+                            "operation": "calculate_pivot_point",
+                            "parameters": { "mesh": "drawbridge_mesh", "pivot_type": "hinge" },
+                            "output": "pivot_point"
+                        },
+                        {
+                            "operation": "calculate_rotation_axis",
+                            "parameters": { "mesh": "drawbridge_mesh", "axis_type": "hinge_axis" },
+                            "output": "rotation_axis"
+                        },
+                        {
+                            "operation": "rotate_mesh_around_pivot",
+                            "parameters": { "mesh": "drawbridge_mesh", "angle": "{angle}", "pivot": "pivot_point", "axis": "rotation_axis" },
+                            "output": "moved_drawbridge"
+                        },
+                        {
+                            "operation": "combine_meshes",
+                            "parameters": { "meshes": [ "castle_body", "moved_drawbridge" ] },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "adjust_tower_height": {
+                    "description": "Adjust the height of a specific tower.",
+                    "parameters": {
+                        "tower_id": {
+                            "type": "string",
+                            "default": "main_keep",
+                            "options": ["main_keep", "north_tower", "east_tower", "south_tower", "west_tower"],
+                            "description": "The identifier of the tower to adjust."
+                        },
+                        "scale_factor": {
+                            "type": "float",
+                            "default": 1.2,
+                            "description": "Factor to scale the tower's height (e.g., 1.2 is 20% taller)."
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "separate_extraction",
+                            "parameters": { "mesh": "input_mesh", "region": "{tower_id}" },
+                            "output": [ "castle_body", "tower_mesh" ]
+                        },
+                        {
+                            "operation": "calculate_scale_center",
+                            "parameters": { "mesh": "tower_mesh", "center_type": "base" },
+                            "output": "scale_center"
+                        },
+                        {
+                            "operation": "calculate_scale_vector",
+                            "parameters": { "axis": "y", "factor": "{scale_factor}" },
+                            "output": "scale_vector"
+                        },
+                        {
+                            "operation": "scale_mesh",
+                            "parameters": { "mesh": "tower_mesh", "factor": "scale_vector", "center": "scale_center" },
+                            "output": "scaled_tower"
+                        },
+                        {
+                            "operation": "combine_meshes",
+                            "parameters": { "meshes": [ "castle_body", "scaled_tower" ] },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "raise_flag": {
+                    "description": "Raise or lower a flag on a flagpole.",
+                    "parameters": {
+                        "percent_raised": {
+                            "type": "float",
+                            "default": 100.0,
+                            "description": "Position of the flag on the pole (0 to 100)."
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "separate_extraction",
+                            "parameters": { "mesh": "input_mesh", "regions": ["flag", "flagpole"] },
+                            "output": [ "castle_body", "flag_mesh", "flagpole_mesh" ]
+                        },
+                        {
+                            "operation": "get_bounds",
+                            "parameters": { "mesh": "flagpole_mesh" },
+                            "output": "pole_bounds"
+                        },
+                        {
+                            "operation": "calculate_translation_vector",
+                            "parameters": { "direction": "up", "bounds": "pole_bounds", "percent": "{percent_raised}" },
+                            "output": "hoist_vector"
+                        },
+                        {
+                            "operation": "translate_mesh",
+                            "parameters": { "mesh": "flag_mesh", "vector": "hoist_vector" },
+                            "output": "hoisted_flag"
+                        },
+                        {
+                            "operation": "combine_meshes",
+                            "parameters": { "meshes": [ "castle_body", "flagpole_mesh", "hoisted_flag" ] },
+                            "output": "result_mesh"
+                        }
+                    ]
+                }
+            }
+        }
+    }
+}
