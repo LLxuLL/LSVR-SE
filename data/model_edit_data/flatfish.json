@@ -1,0 +1,189 @@
+{
+  "flatfish": {
+    "name": "flatfish",
+    "description": "Flatfish model editing configuration. Assumed to be lying flat on the XZ plane, with its 'up' side facing the positive Y-axis.",
+    "operations": {
+      "common": {
+        "add": {
+          "description": "Add a new flatfish next to the current one.",
+          "parameters": {
+            "direction": {
+              "type": "string",
+              "default": "right",
+              "options": ["left", "right", "front", "back"],
+              "description": "Direction to add the new flatfish."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "copy_mesh",
+              "parameters": { "mesh": "input_mesh" },
+              "output": "copied_mesh"
+            },
+            {
+              "operation": "get_bounds",
+              "parameters": { "mesh": "input_mesh" },
+              "output": "bounds"
+            },
+            {
+              "operation": "calculate_translation_vector",
+              "parameters": {
+                "direction": "{direction}",
+                "bounds": "bounds"
+              },
+              "output": "translation"
+            },
+            {
+              "operation": "translate_mesh",
+              "parameters": {
+                "mesh": "copied_mesh",
+                "vector": "translation"
+              },
+              "output": "translated_mesh"
+            },
+            {
+              "operation": "combine_meshes",
+              "parameters": {
+                "meshes": ["input_mesh", "translated_mesh"]
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "translate": {
+          "description": "Translate (move) the flatfish along the sea floor.",
+          "parameters": {
+            "vector": {
+              "type": "list_float",
+              "default": [0.0, 0.0, 0.0],
+              "description": "Translation vector [x, y, z]."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "translate_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "vector": "{vector}"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "rotate": {
+          "description": "Rotate the flatfish on the spot (around its vertical Y-axis).",
+          "parameters": {
+            "angle": {
+              "type": "float",
+              "default": 30.0,
+              "description": "Turning angle in degrees."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "rotate_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "angle": "{angle}",
+                "axis": [0, 1, 0],
+                "center": "center"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "scale": {
+          "description": "Scale the flatfish to make it larger or smaller.",
+          "parameters": {
+            "factor": {
+              "type": "float",
+              "default": 1.1,
+              "description": "Uniform scaling factor."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "calculate_scale_center",
+              "parameters": {
+                "mesh": "input_mesh",
+                "center_type": "center"
+              },
+              "output": "scale_center"
+            },
+            {
+              "operation": "scale_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "factor": "{factor}",
+                "center": "scale_center"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        }
+      },
+      "specific": {
+        "undulate_swim": {
+          "description": "Applies a wave-like deformation to the body to simulate swimming.",
+          "parameters": {
+            "amplitude": {
+              "type": "float",
+              "default": 0.1,
+              "description": "The height of the wave deformation."
+            },
+            "frequency": {
+              "type": "float",
+              "default": 2.0,
+              "description": "The number of waves along the fish's body."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "apply_wave_deformation",
+              "parameters": {
+                "mesh": "input_mesh",
+                "axis": "x",
+                "amplitude": "{amplitude}",
+                "frequency": "{frequency}"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "bury_in_sand": {
+          "description": "Lowers the flatfish to simulate it burying itself in sand, leaving its top side visible.",
+          "parameters": {
+            "percent_visible": {
+              "type": "float",
+              "default": 10.0,
+              "description": "The percentage of the fish's thickness to keep above ground (0-100)."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "get_bounds",
+              "parameters": { "mesh": "input_mesh" },
+              "output": "bounds"
+            },
+            {
+              "operation": "calculate_bury_translation",
+              "parameters": {
+                "bounds": "bounds",
+                "percent_visible": "{percent_visible}"
+              },
+              "output": "bury_vector"
+            },
+            {
+              "operation": "translate_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "vector": "bury_vector"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

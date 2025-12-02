@@ -1,0 +1,190 @@
+{
+  "otter": {
+    "name": "otter",
+    "description": "Editing configuration for otter models",
+    "operations": {
+      "common": {
+        "add": {
+          "description": "Add a new otter nearby (to hold hands with!)",
+          "parameters": {
+            "direction": {
+              "type": "string",
+              "default": "right",
+              "options": ["left", "right", "front", "back"],
+              "description": "Direction to add the new otter"
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "copy_mesh",
+              "parameters": {
+                "mesh": "input_mesh"
+              },
+              "output": "copied_mesh"
+            },
+            {
+              "operation": "get_bounds",
+              "parameters": {
+                "mesh": "input_mesh"
+              },
+              "output": "bounds"
+            },
+            {
+              "operation": "calculate_translation_vector",
+              "parameters": {
+                "direction": "{direction}",
+                "bounds": "bounds"
+              },
+              "output": "translation"
+            },
+            {
+              "operation": "translate_mesh",
+              "parameters": {
+                "mesh": "copied_mesh",
+                "vector": "translation"
+              },
+              "output": "translated_mesh"
+            },
+            {
+              "operation": "combine_meshes",
+              "parameters": {
+                "meshes": ["input_mesh", "translated_mesh"]
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "rotate": {
+          "description": "Rotate the otter model",
+          "parameters": {
+            "angle": {
+              "type": "float",
+              "default": 30.0,
+              "description": "Rotation angle (degrees) around the Y-axis"
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "rotate_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "angle": "{angle}",
+                "axis": [0, 1, 0]
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "translate": {
+          "description": "Translate the otter model (swim forward)",
+          "parameters": {
+            "vector": {
+              "type": "list",
+              "default": [6, 0, 0],
+              "description": "Translation vector (X, Y, Z)"
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "translate_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "vector": "{vector}"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "scale": {
+          "description": "Scale the otter model uniformly",
+          "parameters": {
+            "factor": {
+              "type": "float",
+              "default": 1.15,
+              "description": "Scaling factor"
+            },
+            "center": {
+              "type": "string",
+              "default": "center",
+              "options": ["origin", "center"],
+              "description": "Scaling center"
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "calculate_scale_center",
+              "parameters": {
+                "mesh": "input_mesh",
+                "center_type": "{center}"
+              },
+              "output": "scale_center"
+            },
+            {
+              "operation": "scale_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "factor": "{factor}",
+                "center": "scale_center"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        }
+      },
+      "specific": {
+        "float_on_back": {
+          "description": "Makes the otter lie on its back as if floating in water.",
+          "parameters": {},
+          "atomic_operations": [
+            {
+              "operation": "rotate_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "angle": 180.0,
+                "axis": [1, 0, 0]
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "hold_a_rock": {
+          "description": "Places a small rock on the otter's chest, as if it's about to eat or play.",
+          "parameters": {},
+          "atomic_operations": [
+            {
+              "operation": "find_surface_point",
+              "parameters": {
+                "mesh": "input_mesh",
+                "location_hint": "chest_center"
+              },
+              "output": "rock_placement_point"
+            },
+            {
+              "operation": "load_asset_mesh",
+              "parameters": {
+                "asset_name": "small_rock"
+              },
+              "output": "rock_mesh"
+            },
+            {
+              "operation": "align_mesh_to_point",
+              "parameters": {
+                "mesh_to_align": "rock_mesh",
+                "target_point": "rock_placement_point",
+                "alignment_mode": "rest_on_top"
+              },
+              "output": "placed_rock"
+            },
+            {
+              "operation": "combine_meshes",
+              "parameters": {
+                "meshes": ["input_mesh", "placed_rock"]
+              },
+              "output": "result_mesh"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

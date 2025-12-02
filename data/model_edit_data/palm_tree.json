@@ -1,0 +1,202 @@
+{
+  "palm_tree": {
+    "name": "palm_tree",
+    "description": "Editing configuration for palm tree models",
+    "operations": {
+      "common": {
+        "add": {
+          "description": "Add a new palm tree nearby",
+          "parameters": {
+            "direction": {
+              "type": "string",
+              "default": "right",
+              "options": ["left", "right", "front", "back"],
+              "description": "Direction to add the new tree"
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "copy_mesh",
+              "parameters": {
+                "mesh": "input_mesh"
+              },
+              "output": "copied_mesh"
+            },
+            {
+              "operation": "get_bounds",
+              "parameters": {
+                "mesh": "input_mesh"
+              },
+              "output": "bounds"
+            },
+            {
+              "operation": "calculate_translation_vector",
+              "parameters": {
+                "direction": "{direction}",
+                "bounds": "bounds"
+              },
+              "output": "translation"
+            },
+            {
+              "operation": "translate_mesh",
+              "parameters": {
+                "mesh": "copied_mesh",
+                "vector": "translation"
+              },
+              "output": "translated_mesh"
+            },
+            {
+              "operation": "combine_meshes",
+              "parameters": {
+                "meshes": ["input_mesh", "translated_mesh"]
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "rotate": {
+          "description": "Rotate the palm tree model",
+          "parameters": {
+            "angle": {
+              "type": "float",
+              "default": 10.0,
+              "description": "Rotation angle (degrees) around the Y-axis"
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "rotate_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "angle": "{angle}",
+                "axis": [0, 1, 0]
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "translate": {
+          "description": "Translate the palm tree model",
+          "parameters": {
+            "vector": {
+              "type": "list",
+              "default": [15, 0, 0],
+              "description": "Translation vector (X, Y, Z)"
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "translate_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "vector": "{vector}"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "scale": {
+          "description": "Scale the palm tree model (make it taller)",
+          "parameters": {
+            "factor": {
+              "type": "float",
+              "default": 1.2,
+              "description": "Scaling factor"
+            },
+            "center": {
+              "type": "string",
+              "default": "origin",
+              "options": ["origin", "center"],
+              "description": "Scaling center (origin is best for growing from the base)"
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "calculate_scale_center",
+              "parameters": {
+                "mesh": "input_mesh",
+                "center_type": "{center}"
+              },
+              "output": "scale_center"
+            },
+            {
+              "operation": "scale_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "factor": "{factor}",
+                "center": "scale_center"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        }
+      },
+      "specific": {
+        "sway_in_wind": {
+          "description": "Makes the palm tree bend as if swaying in the wind.",
+          "parameters": {
+            "angle": {
+              "type": "float",
+              "default": 15.0,
+              "description": "The angle of the bend from the vertical axis."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "bend_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "angle": "{angle}",
+                "axis": [0, 0, 1]
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "grow_coconuts": {
+          "description": "Adds a cluster of coconuts to the tree, just below the fronds.",
+          "parameters": {
+            "count": {
+              "type": "integer",
+              "default": 3,
+              "description": "Number of coconuts to grow."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "find_attachment_points",
+              "parameters": {
+                "mesh": "input_mesh",
+                "location_hint": "under_fronds",
+                "count": "{count}"
+              },
+              "output": "coconut_locations"
+            },
+            {
+              "operation": "load_asset_mesh",
+              "parameters": {
+                "asset_name": "coconut"
+              },
+              "output": "coconut_mesh"
+            },
+            {
+              "operation": "place_assets_at_points",
+              "parameters": {
+                "asset_mesh": "coconut_mesh",
+                "points": "coconut_locations"
+              },
+              "output": "coconuts_group_mesh"
+            },
+            {
+              "operation": "combine_meshes",
+              "parameters": {
+                "meshes": ["input_mesh", "coconuts_group_mesh"]
+              },
+              "output": "result_mesh"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

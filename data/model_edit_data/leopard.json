@@ -1,0 +1,244 @@
+{
+  "leopard": {
+    "name": "leopard",
+    "description": "Editing configuration for leopard models",
+    "operations": {
+      "common": {
+        "add": {
+          "description": "Add a new leopard nearby",
+          "parameters": {
+            "direction": {
+              "type": "string",
+              "default": "right",
+              "options": ["left", "right", "up", "down", "front", "back"],
+              "description": "Direction to add the new leopard"
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "copy_mesh",
+              "parameters": {
+                "mesh": "input_mesh"
+              },
+              "output": "copied_mesh"
+            },
+            {
+              "operation": "get_bounds",
+              "parameters": {
+                "mesh": "input_mesh"
+              },
+              "output": "bounds"
+            },
+            {
+              "operation": "calculate_translation_vector",
+              "parameters": {
+                "direction": "{direction}",
+                "bounds": "bounds"
+              },
+              "output": "translation"
+            },
+            {
+              "operation": "translate_mesh",
+              "parameters": {
+                "mesh": "copied_mesh",
+                "vector": "translation"
+              },
+              "output": "translated_mesh"
+            },
+            {
+              "operation": "combine_meshes",
+              "parameters": {
+                "meshes": ["input_mesh", "translated_mesh"]
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "rotate": {
+          "description": "Rotate the leopard model",
+          "parameters": {
+            "angle": {
+              "type": "float",
+              "default": 45.0,
+              "description": "Rotation angle (degrees)"
+            },
+            "axis": {
+              "type": "list",
+              "default": [0, 1, 0],
+              "description": "Rotation axis (X, Y, Z)"
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "rotate_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "angle": "{angle}",
+                "axis": "{axis}"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "translate": {
+          "description": "Translate the leopard model",
+          "parameters": {
+            "vector": {
+              "type": "list",
+              "default": [8, 0, 0],
+              "description": "Translation vector (X, Y, Z)"
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "translate_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "vector": "{vector}"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "scale": {
+          "description": "Scale the leopard model uniformly",
+          "parameters": {
+            "factor": {
+              "type": "float",
+              "default": 1.2,
+              "description": "Scaling factor"
+            },
+            "center": {
+              "type": "string",
+              "default": "center",
+              "options": ["origin", "center"],
+              "description": "Scaling center"
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "calculate_scale_center",
+              "parameters": {
+                "mesh": "input_mesh",
+                "center_type": "{center}"
+              },
+              "output": "scale_center"
+            },
+            {
+              "operation": "scale_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "factor": "{factor}",
+                "center": "scale_center"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        }
+      },
+      "specific": {
+        "stalk": {
+          "description": "Elongates the leopard's body and lowers its stance for a stalking pose.",
+          "parameters": {
+            "elongation_factor": {
+              "type": "float",
+              "default": 1.2,
+              "description": "Factor to stretch the body length (front to back)."
+            },
+            "crouch_factor": {
+              "type": "float",
+              "default": 0.8,
+              "description": "Vertical factor to lower the body (e.g., 0.8 for 80% of original height)."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "calculate_scale_center",
+              "parameters": {
+                "mesh": "input_mesh",
+                "center_type": "origin"
+              },
+              "output": "scale_center"
+            },
+            {
+              "operation": "calculate_non_uniform_scale_vector",
+              "parameters": {
+                "y_factor": "{crouch_factor}",
+                "z_factor": "{elongation_factor}"
+              },
+              "output": "scale_vector"
+            },
+            {
+              "operation": "scale_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "factor": "scale_vector",
+                "center": "scale_center"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "look_up": {
+          "description": "Tilts the leopard's head and neck upwards.",
+          "parameters": {
+            "angle": {
+              "type": "float",
+              "default": 20.0,
+              "description": "Angle to tilt the head up in degrees."
+            },
+            "head_ratio": {
+              "type": "float",
+              "default": 0.2,
+              "description": "The ratio of the leopard's body length that is its head and neck."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "split_mesh_by_axis",
+              "parameters": {
+                "mesh": "input_mesh",
+                "axis": "z",
+                "ratio": "{head_ratio}",
+                "from_end": "front"
+              },
+              "outputs": ["head_mesh", "body_mesh"]
+            },
+            {
+              "operation": "get_bounds",
+              "parameters": {
+                "mesh": "head_mesh"
+              },
+              "output": "head_bounds"
+            },
+            {
+              "operation": "calculate_pivot_point",
+              "parameters": {
+                "bounds": "head_bounds",
+                "edge": "bottom_center"
+              },
+              "output": "pivot_point"
+            },
+            {
+              "operation": "rotate_mesh_around_pivot",
+              "parameters": {
+                "mesh": "head_mesh",
+                "angle": "{angle}",
+                "axis": [1, 0, 0],
+                "pivot": "pivot_point"
+              },
+              "output": "rotated_head"
+            },
+            {
+              "operation": "combine_meshes",
+              "parameters": {
+                "meshes": ["body_mesh", "rotated_head"]
+              },
+              "output": "result_mesh"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

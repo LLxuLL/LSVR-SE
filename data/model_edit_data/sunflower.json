@@ -1,0 +1,241 @@
+{
+    "sunflower": {
+        "name": "sunflower",
+        "description": "向日葵模型的编辑配置",
+        "operations": {
+            "common": {
+                "add": {
+                    "description": "在旁边种一株新的向日葵",
+                    "parameters": {
+                        "direction": {
+                            "type": "string",
+                            "default": "right",
+                            "options": ["left", "right", "front", "back"],
+                            "description": "添加新植株的方向"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "copy_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh"
+                            },
+                            "output": "copied_mesh"
+                        },
+                        {
+                            "operation": "get_bounds",
+                            "parameters": {
+                                "mesh": "input_mesh"
+                            },
+                            "output": "bounds"
+                        },
+                        {
+                            "operation": "calculate_translation_vector",
+                            "parameters": {
+                                "direction": "{direction}",
+                                "bounds": "bounds"
+                            },
+                            "output": "translation"
+                        },
+                        {
+                            "operation": "translate_mesh",
+                            "parameters": {
+                                "mesh": "copied_mesh",
+                                "vector": "translation"
+                            },
+                            "output": "translated_mesh"
+                        },
+                        {
+                            "operation": "combine_meshes",
+                            "parameters": {
+                                "meshes": ["input_mesh", "translated_mesh"]
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "rotate": {
+                    "description": "围绕根部旋转整株向日葵",
+                    "parameters": {
+                        "angle": {
+                            "type": "float",
+                            "default": 45.0,
+                            "description": "旋转角度 (度)"
+                        },
+                        "axis": {
+                            "type": "vector3d",
+                            "default": [0, 1, 0],
+                            "description": "旋转轴 (Y轴)"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "rotate_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "angle": "{angle}",
+                                "axis": "{axis}"
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "scale": {
+                    "description": "缩放整株向日葵（模拟生长）",
+                    "parameters": {
+                        "factor": {
+                            "type": "float",
+                            "default": 1.2,
+                            "description": "缩放因子"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "calculate_scale_center",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "center_type": "origin"
+                            },
+                            "output": "scale_center"
+                        },
+                        {
+                            "operation": "scale_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "factor": "{factor}",
+                                "center": "scale_center"
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "translate": {
+                    "description": "平移整株向日葵的位置",
+                    "parameters": {
+                        "vector": {
+                            "type": "vector3d",
+                            "default": [5, 0, 0],
+                            "description": "平移向量"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "translate_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "vector": "{vector}"
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                }
+            },
+            "specific": {
+                "turn_to_sun": {
+                    "description": "模拟向日葵的花盘追随太阳进行水平转动",
+                    "parameters": {
+                        "angle": {
+                            "type": "float",
+                            "default": 45.0,
+                            "description": "花盘水平转动的角度，正数向右，负数向左"
+                        },
+                        "head_ratio": {
+                            "type": "float",
+                            "default": 0.85,
+                            "description": "花盘及以上部分占植株总高度的起点比例"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "split_mesh_by_axis",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "axis": "Y",
+                                "split_point_ratio": "{head_ratio}"
+                            },
+                            "output": ["stem_and_leaves", "flower_head"]
+                        },
+                        {
+                            "operation": "calculate_pivot_point",
+                            "parameters": {
+                                "mesh": "flower_head",
+                                "pivot_type": "edge",
+                                "edge": "bottom"
+                            },
+                            "output": "pivot_point"
+                        },
+                        {
+                            "operation": "rotate_mesh_around_pivot",
+                            "parameters": {
+                                "mesh": "flower_head",
+                                "angle": "{angle}",
+                                "axis": [0, 1, 0],
+                                "pivot": "pivot_point"
+                            },
+                            "output": "turned_head"
+                        },
+                        {
+                            "operation": "combine_meshes",
+                            "parameters": {
+                                "meshes": ["stem_and_leaves", "turned_head"]
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "droop_head": {
+                    "description": "模拟向日葵因成熟或缺水，花盘沉重下垂",
+                    "parameters": {
+                        "angle": {
+                            "type": "float",
+                            "default": 30.0,
+                            "description": "花盘向前向下垂头的角度"
+                        },
+                        "head_ratio": {
+                            "type": "float",
+                            "default": 0.85,
+                            "description": "花盘及以上部分占植株总高度的起点比例"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "split_mesh_by_axis",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "axis": "Y",
+                                "split_point_ratio": "{head_ratio}"
+                            },
+                            "output": ["stem_and_leaves", "flower_head"]
+                        },
+                        {
+                            "operation": "calculate_pivot_point",
+                            "parameters": {
+                                "mesh": "flower_head",
+                                "pivot_type": "edge",
+                                "edge": "bottom"
+                            },
+                            "output": "pivot_point"
+                        },
+                        {
+                            "operation": "rotate_mesh_around_pivot",
+                            "parameters": {
+                                "mesh": "flower_head",
+                                "angle": "{angle}",
+                                "axis": [0, 0, 1],
+                                "pivot": "pivot_point"
+                            },
+                            "output": "drooped_head"
+                        },
+                        {
+                            "operation": "combine_meshes",
+                            "parameters": {
+                                "meshes": ["stem_and_leaves", "drooped_head"]
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                }
+            }
+        }
+    }
+}

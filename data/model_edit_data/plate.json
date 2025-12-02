@@ -1,0 +1,215 @@
+{
+  "plate": {
+    "name": "plate",
+    "description": "Editing configuration for plate models",
+    "operations": {
+      "common": {
+        "add": {
+          "description": "Add a new plate next to or on top of the current one",
+          "parameters": {
+            "direction": {
+              "type": "string",
+              "default": "right",
+              "options": ["left", "right", "up", "down"],
+              "description": "Direction to add the new plate"
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "copy_mesh",
+              "parameters": {
+                "mesh": "input_mesh"
+              },
+              "output": "copied_mesh"
+            },
+            {
+              "operation": "get_bounds",
+              "parameters": {
+                "mesh": "input_mesh"
+              },
+              "output": "bounds"
+            },
+            {
+              "operation": "calculate_translation_vector",
+              "parameters": {
+                "direction": "{direction}",
+                "bounds": "bounds"
+              },
+              "output": "translation"
+            },
+            {
+              "operation": "translate_mesh",
+              "parameters": {
+                "mesh": "copied_mesh",
+                "vector": "translation"
+              },
+              "output": "translated_mesh"
+            },
+            {
+              "operation": "combine_meshes",
+              "parameters": {
+                "meshes": ["input_mesh", "translated_mesh"]
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "rotate": {
+          "description": "Rotate the plate on a surface",
+          "parameters": {
+            "angle": {
+              "type": "float",
+              "default": 45.0,
+              "description": "Rotation angle (degrees) around its vertical axis"
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "rotate_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "angle": "{angle}",
+                "axis": [0, 1, 0]
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "translate": {
+          "description": "Translate the plate across a surface",
+          "parameters": {
+            "vector": {
+              "type": "list",
+              "default": [1, 0, 0],
+              "description": "Translation vector (X, Y, Z)"
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "translate_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "vector": "{vector}"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "scale": {
+          "description": "Scale the plate model (e.g., from saucer to dinner plate)",
+          "parameters": {
+            "factor": {
+              "type": "float",
+              "default": 1.5,
+              "description": "Uniform scaling factor"
+            },
+            "center": {
+              "type": "string",
+              "default": "center",
+              "options": ["origin", "center"],
+              "description": "Scaling center"
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "calculate_scale_center",
+              "parameters": {
+                "mesh": "input_mesh",
+                "center_type": "{center}"
+              },
+              "output": "scale_center"
+            },
+            {
+              "operation": "scale_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "factor": "{factor}",
+                "center": "scale_center"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        }
+      },
+      "specific": {
+        "stack_plates": {
+          "description": "Stacks multiple plates on top of the original one.",
+          "parameters": {
+            "count": {
+              "type": "integer",
+              "default": 5,
+              "description": "Number of new plates to add to the stack."
+            },
+            "spacing": {
+              "type": "float",
+              "default": 0.2,
+              "description": "Vertical spacing between each plate."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "create_vertical_stack",
+              "parameters": {
+                "mesh": "input_mesh",
+                "count": "{count}",
+                "spacing": "{spacing}"
+              },
+              "output": "new_plates_stack"
+            },
+            {
+              "operation": "combine_meshes",
+              "parameters": {
+                "meshes": ["input_mesh", "new_plates_stack"]
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "add_food_on_top": {
+          "description": "Places a piece of food on the plate.",
+          "parameters": {
+            "food_type": {
+              "type": "string",
+              "default": "cake_slice",
+              "options": ["cake_slice", "apple", "steak"],
+              "description": "The type of food asset to place on the plate."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "find_surface_point",
+              "parameters": {
+                "mesh": "input_mesh",
+                "location_hint": "top_center"
+              },
+              "output": "food_placement_point"
+            },
+            {
+              "operation": "load_asset_mesh",
+              "parameters": {
+                "asset_name": "{food_type}"
+              },
+              "output": "food_mesh"
+            },
+            {
+              "operation": "align_mesh_to_point",
+              "parameters": {
+                "mesh_to_align": "food_mesh",
+                "target_point": "food_placement_point",
+                "alignment_mode": "rest_on_top"
+              },
+              "output": "placed_food"
+            },
+            {
+              "operation": "combine_meshes",
+              "parameters": {
+                "meshes": ["input_mesh", "placed_food"]
+              },
+              "output": "result_mesh"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

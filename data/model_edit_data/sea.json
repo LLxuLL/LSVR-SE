@@ -1,0 +1,223 @@
+{
+  "sea": {
+    "name": "sea",
+    "description": "Editing configuration for a sea surface model",
+    "operations": {
+      "common": {
+        "add": {
+          "description": "Add an adjacent sea plane to expand the area",
+          "parameters": {
+            "direction": {
+              "type": "string",
+              "default": "right",
+              "options": ["left", "right", "front", "back"],
+              "description": "Direction to add the new sea plane"
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "copy_mesh",
+              "parameters": {
+                "mesh": "input_mesh"
+              },
+              "output": "copied_mesh"
+            },
+            {
+              "operation": "get_bounds",
+              "parameters": {
+                "mesh": "input_mesh"
+              },
+              "output": "bounds"
+            },
+            {
+              "operation": "calculate_translation_vector",
+              "parameters": {
+                "direction": "{direction}",
+                "bounds": "bounds"
+              },
+              "output": "translation"
+            },
+            {
+              "operation": "translate_mesh",
+              "parameters": {
+                "mesh": "copied_mesh",
+                "vector": "translation"
+              },
+              "output": "translated_mesh"
+            },
+            {
+              "operation": "combine_meshes",
+              "parameters": {
+                "meshes": ["input_mesh", "translated_mesh"]
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "rotate": {
+          "description": "Rotate the sea plane (e.g., change wave orientation)",
+          "parameters": {
+            "angle": {
+              "type": "float",
+              "default": 15.0,
+              "description": "Rotation angle (degrees) around the vertical axis"
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "rotate_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "angle": "{angle}",
+                "axis": [0, 1, 0]
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "translate": {
+          "description": "Translate the sea plane",
+          "parameters": {
+            "vector": {
+              "type": "list",
+              "default": [100, 0, 100],
+              "description": "Translation vector (X, Y, Z)"
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "translate_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "vector": "{vector}"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "scale": {
+          "description": "Scale the sea area (expand or shrink the surface)",
+          "parameters": {
+            "scale_vector": {
+              "type": "list",
+              "default": [2, 1, 2],
+              "description": "Scaling factor for width(X), height/waves(Y), and length(Z)"
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "scale_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "factor": "{scale_vector}",
+                "center": [0,0,0]
+              },
+              "output": "result_mesh"
+            }
+          ]
+        }
+      },
+      "specific": {
+        "set_waves": {
+          "description": "Adjusts the dynamic properties of the sea waves.",
+          "parameters": {
+            "height": {
+              "type": "float",
+              "default": 0.5,
+              "description": "The average height of the waves."
+            },
+            "choppiness": {
+              "type": "float",
+              "default": 1.0,
+              "description": "The frequency and sharpness of the waves."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "apply_wave_modifier",
+              "parameters": {
+                "mesh": "input_mesh",
+                "height": "{height}",
+                "choppiness": "{choppiness}"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "change_tide": {
+          "description": "Raises or lowers the overall sea level.",
+          "parameters": {
+            "level_change": {
+              "type": "float",
+              "default": 1.0,
+              "description": "The change in sea level on the Y-axis. Positive for high tide, negative for low tide."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "translate_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "vector": [0, "{level_change}", 0]
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "create_current": {
+          "description": "Simulates a directional surface current.",
+          "parameters": {
+            "speed": {
+              "type": "float",
+              "default": 1.0,
+              "description": "The speed of the current's flow."
+            },
+            "direction": {
+              "type": "list",
+              "default": [0, 0, 1],
+              "description": "The direction vector of the current."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "perform_animation",
+              "parameters": {
+                "mesh": "input_mesh",
+                "animation_name": "current",
+                "speed": "{speed}",
+                "direction": "{direction}"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "create_whirlpool": {
+          "description": "Adds a swirling vortex to the water surface.",
+          "parameters": {
+            "size": {
+              "type": "float",
+              "default": 5.0,
+              "description": "The diameter of the whirlpool."
+            },
+            "strength": {
+              "type": "float",
+              "default": 2.0,
+              "description": "The rotational speed and downward pull of the whirlpool."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "add_surface_vortex",
+              "parameters": {
+                "mesh": "input_mesh",
+                "size": "{size}",
+                "strength": "{strength}"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

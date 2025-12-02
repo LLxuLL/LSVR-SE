@@ -1,0 +1,241 @@
+{
+    "shrew": {
+        "name": "shrew",
+        "description": "鼩鼱模型的编辑配置",
+        "operations": {
+            "common": {
+                "add": {
+                    "description": "在指定方向上添加一个新的鼩鼱模型",
+                    "parameters": {
+                        "direction": {
+                            "type": "string",
+                            "default": "right",
+                            "options": ["left", "right", "up", "down", "front", "back"],
+                            "description": "添加新模型的方向"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "copy_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh"
+                            },
+                            "output": "copied_mesh"
+                        },
+                        {
+                            "operation": "get_bounds",
+                            "parameters": {
+                                "mesh": "input_mesh"
+                            },
+                            "output": "bounds"
+                        },
+                        {
+                            "operation": "calculate_translation_vector",
+                            "parameters": {
+                                "direction": "{direction}",
+                                "bounds": "bounds"
+                            },
+                            "output": "translation"
+                        },
+                        {
+                            "operation": "translate_mesh",
+                            "parameters": {
+                                "mesh": "copied_mesh",
+                                "vector": "translation"
+                            },
+                            "output": "translated_mesh"
+                        },
+                        {
+                            "operation": "combine_meshes",
+                            "parameters": {
+                                "meshes": ["input_mesh", "translated_mesh"]
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "rotate": {
+                    "description": "围绕中心点旋转整个鼩鼱模型",
+                    "parameters": {
+                        "angle": {
+                            "type": "float",
+                            "default": 90.0,
+                            "description": "旋转角度 (度)"
+                        },
+                        "axis": {
+                            "type": "vector3d",
+                            "default": [0, 1, 0],
+                            "description": "旋转轴 (例如 [0, 1, 0] 表示Y轴)"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "rotate_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "angle": "{angle}",
+                                "axis": "{axis}"
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "scale": {
+                    "description": "缩放整个鼩鼱模型",
+                    "parameters": {
+                        "factor": {
+                            "type": "float",
+                            "default": 1.5,
+                            "description": "缩放因子"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "calculate_scale_center",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "center_type": "center"
+                            },
+                            "output": "scale_center"
+                        },
+                        {
+                            "operation": "scale_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "factor": "{factor}",
+                                "center": "scale_center"
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "translate": {
+                    "description": "平移整个鼩鼱模型",
+                    "parameters": {
+                        "vector": {
+                            "type": "vector3d",
+                            "default": [1, 0, 0],
+                            "description": "平移向量"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "translate_mesh",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "vector": "{vector}"
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                }
+            },
+            "specific": {
+                "nod_head": {
+                    "description": "模拟鼩鼱点头或嗅探的动作",
+                    "parameters": {
+                        "angle": {
+                            "type": "float",
+                            "default": 20.0,
+                            "description": "头部向下点头的角度"
+                        },
+                        "head_ratio": {
+                            "type": "float",
+                            "default": 0.25,
+                            "description": "头部占身体总长度的比例（从模型前端算起）"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "split_mesh_by_axis",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "axis": "X",
+                                "split_point_ratio_from_front": "{head_ratio}"
+                            },
+                            "output": ["head_section", "body_section"]
+                        },
+                        {
+                            "operation": "calculate_pivot_point",
+                            "parameters": {
+                                "mesh": "head_section",
+                                "pivot_type": "edge",
+                                "edge": "back"
+                            },
+                            "output": "pivot_point"
+                        },
+                        {
+                            "operation": "rotate_mesh_around_pivot",
+                            "parameters": {
+                                "mesh": "head_section",
+                                "angle": "{angle}",
+                                "axis": [0, 0, 1],
+                                "pivot": "pivot_point"
+                            },
+                            "output": "nodded_head"
+                        },
+                        {
+                            "operation": "combine_meshes",
+                            "parameters": {
+                                "meshes": ["body_section", "nodded_head"]
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                },
+                "curl_tail": {
+                    "description": "使鼩鼱的尾巴向上或向下卷曲",
+                    "parameters": {
+                        "angle": {
+                            "type": "float",
+                            "default": 45.0,
+                            "description": "尾巴卷曲的角度，正数向上，负数向下"
+                        },
+                        "tail_ratio": {
+                            "type": "float",
+                            "default": 0.4,
+                            "description": "尾部占身体总长度的比例（从模型后端算起）"
+                        }
+                    },
+                    "atomic_operations": [
+                        {
+                            "operation": "split_mesh_by_axis",
+                            "parameters": {
+                                "mesh": "input_mesh",
+                                "axis": "X",
+                                "split_point_ratio_from_back": "{tail_ratio}"
+                            },
+                            "output": ["main_body", "tail_section"]
+                        },
+                        {
+                            "operation": "calculate_pivot_point",
+                            "parameters": {
+                                "mesh": "tail_section",
+                                "pivot_type": "edge",
+                                "edge": "front"
+                            },
+                            "output": "pivot_point"
+                        },
+                        {
+                            "operation": "rotate_mesh_around_pivot",
+                            "parameters": {
+                                "mesh": "tail_section",
+                                "angle": "{angle}",
+                                "axis": [0, 0, 1],
+                                "pivot": "pivot_point"
+                            },
+                            "output": "curled_tail"
+                        },
+                        {
+                            "operation": "combine_meshes",
+                            "parameters": {
+                                "meshes": ["main_body", "curled_tail"]
+                            },
+                            "output": "result_mesh"
+                        }
+                    ]
+                }
+            }
+        }
+    }
+}

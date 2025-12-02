@@ -1,0 +1,229 @@
+{
+  "road": {
+    "name": "road",
+    "description": "Editing configuration for road section models",
+    "operations": {
+      "common": {
+        "add": {
+          "description": "Add a new, parallel road section (e.g., for a divided highway)",
+          "parameters": {
+            "direction": {
+              "type": "string",
+              "default": "right",
+              "options": ["left", "right"],
+              "description": "Direction to add the new road section"
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "copy_mesh",
+              "parameters": {
+                "mesh": "input_mesh"
+              },
+              "output": "copied_mesh"
+            },
+            {
+              "operation": "get_bounds",
+              "parameters": {
+                "mesh": "input_mesh"
+              },
+              "output": "bounds"
+            },
+            {
+              "operation": "calculate_translation_vector",
+              "parameters": {
+                "direction": "{direction}",
+                "bounds": "bounds"
+              },
+              "output": "translation"
+            },
+            {
+              "operation": "translate_mesh",
+              "parameters": {
+                "mesh": "copied_mesh",
+                "vector": "translation"
+              },
+              "output": "translated_mesh"
+            },
+            {
+              "operation": "combine_meshes",
+              "parameters": {
+                "meshes": ["input_mesh", "translated_mesh"]
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "rotate": {
+          "description": "Rotate the road section on the ground plane",
+          "parameters": {
+            "angle": {
+              "type": "float",
+              "default": 15.0,
+              "description": "Rotation angle (degrees) around the vertical axis"
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "rotate_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "angle": "{angle}",
+                "axis": [0, 1, 0]
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "translate": {
+          "description": "Translate the road section",
+          "parameters": {
+            "vector": {
+              "type": "list",
+              "default": [0, 0, 10],
+              "description": "Translation vector (X, Y, Z)"
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "translate_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "vector": "{vector}"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "scale": {
+          "description": "Scale the road section's dimensions (e.g., widen or lengthen)",
+          "parameters": {
+            "scale_vector": {
+              "type": "list",
+              "default": [1, 1, 2],
+              "description": "Scaling factor for width(X), height(Y), and length(Z)"
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "scale_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "factor": "{scale_vector}",
+                "center": [0,0,0]
+              },
+              "output": "result_mesh"
+            }
+          ]
+        }
+      },
+      "specific": {
+        "extend": {
+          "description": "Extends the road in a straight line by adding more sections.",
+          "parameters": {
+            "sections_to_add": {
+              "type": "integer",
+              "default": 1,
+              "description": "Number of identical sections to add to the end of the road."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "extend_mesh_linearly",
+              "parameters": {
+                "mesh": "input_mesh",
+                "count": "{sections_to_add}"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "add_curve": {
+          "description": "Bends the road section to create a curve.",
+          "parameters": {
+            "angle": {
+              "type": "float",
+              "default": 45.0,
+              "description": "The total angle of the curve in degrees."
+            },
+            "direction": {
+              "type": "string",
+              "default": "left",
+              "options": ["left", "right"],
+              "description": "The direction of the curve."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "bend_mesh",
+              "parameters": {
+                "mesh": "input_mesh",
+                "angle": "{angle}",
+                "direction": "{direction}",
+                "axis": [0, 1, 0]
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "add_incline": {
+          "description": "Tilts the road section to create an incline or decline.",
+          "parameters": {
+            "angle": {
+              "type": "float",
+              "default": 10.0,
+              "description": "The angle of the slope in degrees. Positive for incline, negative for decline."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "calculate_pivot_point",
+              "parameters": {
+                "mesh": "input_mesh",
+                "pivot_type": "start_edge_center"
+              },
+              "output": "road_start_pivot"
+            },
+            {
+              "operation": "rotate_mesh_around_pivot",
+              "parameters": {
+                "mesh": "input_mesh",
+                "pivot": "road_start_pivot",
+                "angle": "{angle}",
+                "axis": [1, 0, 0]
+              },
+              "output": "result_mesh"
+            }
+          ]
+        },
+        "add_pothole": {
+          "description": "Adds a pothole to the road surface.",
+          "parameters": {
+            "size": {
+              "type": "float",
+              "default": 0.5,
+              "description": "The diameter of the pothole."
+            },
+            "depth": {
+              "type": "float",
+              "default": 0.1,
+              "description": "The depth of the pothole."
+            }
+          },
+          "atomic_operations": [
+            {
+              "operation": "add_surface_defect",
+              "parameters": {
+                "mesh": "input_mesh",
+                "defect_type": "pothole",
+                "size": "{size}",
+                "depth": "{depth}"
+              },
+              "output": "result_mesh"
+            }
+          ]
+        }
+      }
+    }
+  }
+}
