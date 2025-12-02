@@ -1,4 +1,4 @@
-# LSVR-SE: Language-Guided Single-View Reconstruction with Semantic Editing
+# LSVR-SE: Language-Guided Single-View Reconstruction with Semantic Editing (Alpha)
 
 ![Framework Overview](overview.png)  
 *Figure: Overview of the LSVR-SE framework integrating language-guided reconstruction and semantic editing.*
