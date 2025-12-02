@@ -119,3 +119,9 @@ For questions, contact:
 - **Metaverse Content Creation**: Language-driven 3D scene generation and editing.
 
 ---
+
+## ❕ Note
+
+- **Version Statement**: This LSVR-SE model is an Alpha test version, and its official release will be available shortly.  
+
+---
