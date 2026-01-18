@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-LSVR-SE Complete Training Script
-Supports joint training and individual training of three components: HSDE, LC-NeRF, DPEE
+LSVR-SE 完整训练脚本
+支持HSDE、LC-NeRF、DPEE三个组件的联合训练和单独训练
 """
 
 import os
@@ -9,8 +9,8 @@ os.environ['HF_ENDPOINT'] = 'https://hf-mirror.com'
 
 os.environ['HF_HUB_DISABLE_SYMLINKS_WARNING'] = '1'
 
-os.environ['HF_HUB_DOWNLOAD_TIMEOUT'] = '300'  # 5 minutes
-os.environ['HF_HUB_ETAG_TIMEOUT'] = '30'  # 30 seconds
+os.environ['HF_HUB_DOWNLOAD_TIMEOUT'] = '300'  # 5分钟
+os.environ['HF_HUB_ETAG_TIMEOUT'] = '30'  # 30秒
 
 import sys
 import time
@@ -33,13 +33,13 @@ from PIL import Image
 from tqdm import tqdm
 import wandb
 
-# Import LSVR-SE components
+# 导入LSVR-SE组件
 from lsvr_se_config import LSVRSEConfig, LSVRSEModelManager, DEFAULT_CONFIG, FAST_CONFIG, PRODUCTION_CONFIG
 from hsde import HSDE, HSDEConfig, HSDELoss
 from lc_nerf import LanguageConditionedNeRF, LCNerfConfig, LCNerfLoss
 from dpee import DifferentiableProgrammaticEditingEngine, DPEEConfig
 
-# Configure logging
+# 配置日志
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
@@ -48,55 +48,55 @@ logger = logging.getLogger("LSVR-SE-Training")
 
 
 class LSVRSEDataset(Dataset):
-    """LSVR-SE Training Dataset"""
+    """LSVR-SE训练数据集"""
 
     def __init__(self, data_root: str, split: str = "train", transform=None):
         self.data_root = Path(data_root)
         self.split = split
         self.transform = transform
 
-        # Data paths
+        # 数据路径
         self.image_dir = self.data_root / split / "images"
         self.mesh_dir = self.data_root / split / "meshes"
         self.text_dir = self.data_root / split / "texts"
 
-        # Ensure directories exist
+        # 确保目录存在
         self.image_dir.mkdir(parents=True, exist_ok=True)
         self.mesh_dir.mkdir(parents=True, exist_ok=True)
         self.text_dir.mkdir(parents=True, exist_ok=True)
 
-        # Load data list
+        # 加载数据列表
         self.data_list = self._load_data_list()
 
         logger.info(f"Loaded {len(self.data_list)} samples for {split} split")
 
     def _load_data_list(self) -> List[Dict[str, str]]:
-        """Load data list"""
+        """加载数据列表"""
         data_list = []
 
-        # Scan image files
+        # 扫描图像文件
         image_files = list(self.image_dir.glob("*.jpg")) + list(self.image_dir.glob("*.png"))
 
         for image_file in image_files:
             base_name = image_file.stem
 
-            # Check corresponding mesh file
+            # 检查对应的网格文件
             mesh_file = self.mesh_dir / f"{base_name}.ply"
             if not mesh_file.exists():
-                # Create default mesh
+                # 创建默认网格
                 mesh = o3d.geometry.TriangleMesh.create_box(width=1.0, height=1.0, depth=1.0)
                 o3d.io.write_triangle_mesh(str(mesh_file), mesh)
 
-            # Check corresponding text file
+            # 检查对应的文本文件
             text_file = self.text_dir / f"{base_name}.txt"
             if not text_file.exists():
-                # Create default text
+                # 创建默认文本
                 default_texts = [
-                    "Add window",
-                    "Remove door",
-                    "Rotate 45 degrees",
-                    "Scale 1.5x",
-                    "Add column"
+                    "添加窗户",
+                    "移除门",
+                    "旋转45度",
+                    "缩放1.5倍",
+                    "添加柱子"
                 ]
                 text = random.choice(default_texts)
                 text_file.write_text(text, encoding='utf-8')
@@ -110,6 +110,8 @@ class LSVRSEDataset(Dataset):
 
         return data_list
 
+
+
     def __len__(self):
         return len(self.data_list)
 
@@ -118,38 +120,38 @@ class LSVRSEDataset(Dataset):
         base_name = data['base_name']
 
         try:
-            # ---- 1. Image ----
+            # ---- 1. 图像 ----
             image = Image.open(data['image']).convert('RGB')
             image = image.resize((224, 224))
             image_array = np.array(image).astype(np.float32) / 255.0
             image_tensor = torch.from_numpy(image_array).permute(2, 0, 1)
 
-            # ---- 2. Text ----
+            # ---- 2. 文本 ----
             with open(data['text'], 'r', encoding='utf-8') as f:
                 text = f.read().strip()
 
-            # ---- 3. Mesh (placeholder, can be reconstructed later) ----
+            # ---- 3. 网格（只做占位，后面可重构）----
             mesh = o3d.io.read_triangle_mesh(data['mesh'])
             if not mesh.has_vertices():
                 mesh = o3d.geometry.TriangleMesh.create_box()
 
-            # ---- 4. Camera poses (new) ----
+            # ---- 4. 相机 pose（新增） ----
             pose_file = Path(data['mesh']).parent.parent / 'poses' / f'{base_name}.json'
             if pose_file.exists():
                 with open(pose_file, 'r') as f:
-                    poses = json.load(f)  # dict or list
+                    poses = json.load(f)  # dict 或 list
             else:
-                poses = None  # placeholder
+                poses = None  # 占位
             return {
                 'image': image_tensor,
                 'text': text,
                 'mesh': mesh,
-                'poses': poses,  # new field
+                'poses': poses,  # 新增字段
                 'base_name': base_name
             }
         except Exception as e:
             logger.error(f"Error loading {base_name}: {e}")
-            # Return default placeholder
+            # 返回默认占位
             return {
                 'image': torch.randn(3, 224, 224),
                 'text': 'placeholder',
@@ -159,10 +161,10 @@ class LSVRSEDataset(Dataset):
             }
 
     def _get_default_sample(self):
-        """Get default sample"""
+        """获取默认样本"""
         image = torch.randn(3, 224, 224)
         mesh = o3d.geometry.TriangleMesh.create_box()
-        text = "Add window"
+        text = "添加窗户"
 
         return {
             'image': image,
@@ -173,38 +175,38 @@ class LSVRSEDataset(Dataset):
 
 
 class LSVRSETrainer:
-    """LSVR-SE Trainer"""
+    """LSVR-SE训练器"""
 
     def __init__(self, config: LSVRSEConfig, use_wandb: bool = True):
         self.config = config
         self.use_wandb = use_wandb
 
-        # Initialize model manager
+        # 初始化模型管理器
         self.model_manager = LSVRSEModelManager(config)
 
-        # Components
+        # 组件
         self.hsde = None
         self.lc_nerf = None
         self.dpee = None
 
-        # Loss functions
+        # 损失函数
         self.hsde_loss = None
         self.lc_nerf_loss = None
 
-        # Optimizer
+        # 优化器
         self.optimizer = None
         self.scheduler = None
         self.scaler = None
 
-        # Device
+        # 设备
         self.device = torch.device(config.device)
 
-        # Training state
+        # 训练状态
         self.current_epoch = 0
         self.global_step = 0
         self.best_metric = 0.0
 
-        # Initialize WandB
+        # 初始化WandB
         if use_wandb:
             wandb.init(
                 project=config.project_name,
@@ -213,19 +215,19 @@ class LSVRSETrainer:
             )
 
     def setup_models(self):
-        """Set up models"""
+        """设置模型"""
         logger.info("Setting up models...")
 
         try:
-            # Initialize model manager
+            # 初始化模型管理器
             self.model_manager.initialize_components()
 
-            # Get components
+            # 获取组件
             self.hsde = self.model_manager.hsde
             self.lc_nerf = self.model_manager.lc_nerf
             self.dpee = self.model_manager.dpee
 
-            # Initialize loss functions
+            # 初始化损失函数
             if self.hsde is not None:
                 hsde_config = HSDEConfig(**self.config.hsde_config)
                 self.hsde_loss = HSDELoss(hsde_config)
@@ -234,10 +236,10 @@ class LSVRSETrainer:
                 lc_nerf_config = LCNerfConfig(**self.config.lc_nerf_config)
                 self.lc_nerf_loss = LCNerfLoss(lc_nerf_config)
 
-            # Set up optimizer
+            # 设置优化器
             self._setup_optimizer()
 
-            # Set up mixed precision
+            # 设置混合精度
             if self.config.mixed_precision:
                 self.scaler = GradScaler()
 
@@ -249,7 +251,7 @@ class LSVRSETrainer:
             raise
 
     def _setup_optimizer(self):
-        """Set up optimizer"""
+        """设置优化器"""
         trainable_params = []
 
         if self.hsde is not None:
@@ -264,7 +266,7 @@ class LSVRSETrainer:
         if not trainable_params:
             raise ValueError("No trainable parameters found!")
 
-        # Create optimizer
+        # 创建优化器
         if self.config.training_config['optimizer'] == 'AdamW':
             self.optimizer = torch.optim.AdamW(
                 trainable_params,
@@ -279,7 +281,7 @@ class LSVRSETrainer:
                 lr=self.config.training_config['learning_rate']
             )
 
-        # Create learning rate scheduler
+        # 创建学习率调度器
         if self.config.training_config['scheduler'] == 'CosineAnnealingLR':
             self.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
                 self.optimizer,
@@ -294,10 +296,10 @@ class LSVRSETrainer:
             )
 
     def train_epoch(self, dataloader: DataLoader, epoch: int) -> Dict[str, float]:
-        """Train one epoch"""
+        """训练一个epoch"""
         logger.info(f"Starting epoch {epoch}")
 
-        # Set training mode
+        # 设置训练模式
         if self.hsde:
             self.hsde.train()
         if self.lc_nerf:
@@ -317,21 +319,21 @@ class LSVRSETrainer:
         with tqdm(dataloader, desc=f"Epoch {epoch}") as pbar:
             for batch_idx, batch in enumerate(pbar):
                 try:
-                    # Forward pass
+                    # 前向传播
                     losses = self.train_step(batch)
 
-                    # Update losses
+                    # 更新损失
                     for key, value in losses.items():
                         if key in epoch_losses:
                             epoch_losses[key] += value
 
-                    # Update progress bar
+                    # 更新进度条
                     pbar.set_postfix({
                         'loss': f"{losses['total_loss']:.4f}",
                         'lr': f"{self.optimizer.param_groups[0]['lr']:.2e}"
                     })
 
-                    # Log to WandB
+                    # 记录到WandB
                     if self.use_wandb and self.global_step % 10 == 0:
                         wandb.log({
                             'train/step_loss': losses['total_loss'],
@@ -346,43 +348,42 @@ class LSVRSETrainer:
                     logger.error(traceback.format_exc())
                     continue
 
-        # Calculate average losses
+        # 计算平均损失
         for key in epoch_losses:
             epoch_losses[key] /= num_batches
 
         return epoch_losses
 
     def train_step(self, batch: Dict[str, Any]) -> Dict[str, float]:
-        """Single training step: ensure total_loss is tensor and correctly call scheduler"""
+        """Single training step: Ensure total_loss is a tensor, and scheduler is called correctly"""
         self.optimizer.zero_grad()
 
         images = batch['image'].to(self.device)
         texts = batch['text']
-        poses = batch['poses']
-        # meshes already split into vertices/faces, submodules don't use them for now, keep empty list
+        # meshes not used currently, kept empty for future use
         meshes = []
 
-        total_loss = torch.tensor(0.0, device=self.device)
+        total_loss = torch.tensor(0.0, device=self.device, requires_grad=True)
         losses = {'total_loss': 0.0}
 
         if self.hsde is not None:
-            loss = self._train_hsde_step(images, texts)
+            loss = self._train_hsde_step(images, texts, batch)  # pass batch
             losses['hsde_loss'] = loss.item()
             total_loss = total_loss + loss
 
         if self.lc_nerf is not None:
-            loss = self._train_lc_nerf_step(images, texts, meshes)
+            loss = self._train_lc_nerf_step(images, texts, meshes, batch)  # pass batch
             losses['lc_nerf_loss'] = loss.item()
             total_loss = total_loss + loss
 
         if self.dpee is not None:
-            loss = self._train_dpee_step(meshes, texts)
+            loss = self._train_dpee_step(meshes, texts, batch)  # pass batch
             losses['dpee_loss'] = loss.item()
             total_loss = total_loss + loss
 
         losses['total_loss'] = total_loss.item()
 
-        # Backward propagation
+        # Backward pass and scheduler (unchanged)
         if self.config.mixed_precision and self.scaler is not None:
             self.scaler.scale(total_loss).backward()
             self.scaler.step(self.optimizer)
@@ -391,19 +392,19 @@ class LSVRSETrainer:
             total_loss.backward()
             self.optimizer.step()
 
-        # Learning rate scheduling (must be after optimizer.step)
+        # Learning rate scheduler must be called after optimizer.step()
         if self.scheduler is not None:
             self.scheduler.step()
 
         return losses
 
     def _train_hsde_step(self, images: torch.Tensor, texts: List[str]) -> torch.Tensor:
-        """HSDE training sub-step: ensure returns tensor and indices are long"""
+        """HSDE 训练子步骤：保证返回 tensor，且索引为 long"""
         try:
             from transformers import AutoTokenizer
             tokenizer = AutoTokenizer.from_pretrained("openai/clip-vit-base-patch32")
             text_inputs = tokenizer(texts, return_tensors="pt", padding=True, truncation=True)
-            input_ids = text_inputs['input_ids'].to(self.device)  # already long
+            input_ids = text_inputs['input_ids'].to(self.device)  # 已是 long
             attention_mask = text_inputs.get('attention_mask', None)
             if attention_mask is not None:
                 attention_mask = attention_mask.to(self.device)
@@ -413,18 +414,18 @@ class LSVRSETrainer:
 
             targets = self._create_hsde_targets(results, texts)
             losses = self.hsde_loss(results['predictions'], targets)
-            return losses['total_loss']  # keep tensor
+            return losses['total_loss']  # 保持 tensor
         except Exception as e:
             logger.error(f"HSDE training step failed: {e}")
             return torch.tensor(0.0, device=self.device, requires_grad=True)
 
     def _train_lc_nerf_step(self, images: torch.Tensor, texts: List[str], meshes) -> torch.Tensor:
-        """LC-NeRF training sub-step: compatible with 4-dimensional images"""
+        """LC-NeRF 训练子步骤：兼容 4 维图像"""
         try:
             batch_size, _, height, width = images.shape  # [B,C,H,W]
             rays_o, rays_d = self._generate_training_rays(batch_size, height, width)
 
-            # Random text ids
+            # 随机文本 id
             input_ids = torch.randint(0, 1000, (batch_size, 77), device=self.device)
 
             with autocast(enabled=self.config.mixed_precision, device_type='cpu'):
@@ -437,27 +438,45 @@ class LSVRSETrainer:
             logger.error(f"LC-NeRF training step failed: {e}")
             return torch.tensor(0.0, device=self.device, requires_grad=True)
 
-    def _train_dpee_step(self, meshes, texts: List[str]) -> torch.Tensor:
-        """DPEE training sub-step: prevent division by zero, return tensor"""
-        try:
-            total_loss = 0.0
-            for text in texts:
-                if "添加" in text or "add" in text.lower():
-                    total_loss += 0.1
-                elif "移除" in text or "remove" in text.lower():
-                    total_loss += 0.2
-                else:
-                    total_loss += 0.05
-            denominator = max(len(texts), 1)
-            loss = torch.tensor(total_loss / denominator, device=self.device, requires_grad=True)
-            return loss
-        except Exception as e:
-            logger.error(f"DPEE training step failed: {e}")
-            return torch.tensor(0.0, device=self.device, requires_grad=True)
+    def _train_dpee_step(self, meshes: List[o3d.geometry.TriangleMesh], texts: List[str],
+                         batch: Dict[str, Any]) -> torch.Tensor:
+        """
+        DPEE training step: Use real loss from batch if available, otherwise use random constants as placeholders
+        batch should contain:
+            - edit_success: [B]  bool  Whether edit was successful
+            - chamfer_loss: [B]  float  Chamfer distance between before/after edit
+            - stability_score: [B] float  Physical stability score
+        """
+        device = self.device
+
+        # Try to read real loss values
+        if 'chamfer_loss' in batch:
+            # Real chamfer loss
+            loss = batch['chamfer_loss'].mean()
+            return loss.requires_grad_(True)
+
+        if 'edit_success' in batch:
+            # Use success rate as reward
+            success = batch['edit_success'].float()
+            loss = 1.0 - success.mean()  # Minimize failure rate
+            return loss.requires_grad_(True)
+
+        # Fallback: Random constant loss (consistent with original code behavior)
+        total_loss = 0.0
+        for text in texts:
+            if "添加" in text or "add" in text.lower():
+                total_loss += 0.1
+            elif "移除" in text or "remove" in text.lower():
+                total_loss += 0.2
+            else:
+                total_loss += 0.05
+        denominator = max(len(texts), 1)
+        loss = torch.tensor(total_loss / denominator, device=device, requires_grad=True)
+        return loss
 
     def _generate_training_rays(self, batch_size: int, height: int, width: int) -> Tuple[torch.Tensor, torch.Tensor]:
-        """Generate training rays"""
-        # Simplified ray generation
+        """生成训练用的射线"""
+        # 简化的射线生成
         num_rays = height * width
 
         rays_o = torch.zeros(batch_size, num_rays, 3, device=self.device)
@@ -466,37 +485,72 @@ class LSVRSETrainer:
 
         return rays_o, rays_d
 
-    def _create_hsde_targets(self, results: Dict[str, Any], texts: List[str]) -> Dict[str, torch.Tensor]:
-        """Create HSDE training targets"""
-        batch_size = results['fused_features'].shape[0]
-        num_anchors = results['fused_features'].shape[1]
+    def _create_hsde_targets(self, results: Dict[str, Any], batch: Dict[str, Any]) -> Dict[str, torch.Tensor]:
+        """
+        HSDE training targets: Use real values from batch if available, otherwise use random placeholders
+        batch should contain:
+            - semantic_labels: [B, N]  long
+            - bbox_targets:    [B, N, 6]  float
+            - confidence_targets: [B, N]  float
+        """
+        batch_size, num_anchors = results['fused_features'].shape[:2]
+        device = self.device
 
-        # Create virtual targets
-        targets = {
-            'semantic_labels': torch.randint(0, 128, (batch_size, num_anchors), device=self.device),
-            'bbox_targets': torch.randn(batch_size, num_anchors, 6, device=self.device),
-            'confidence_targets': torch.rand(batch_size, num_anchors, device=self.device)
+        # Try to read real values (if dataset provides them)
+        if 'semantic_labels' in batch:
+            semantic_labels = batch['semantic_labels']
+            bbox_targets = batch['bbox_targets']
+            confidence_targets = batch['confidence_targets']
+        else:
+            # Fallback: Random generation (consistent with original code behavior)
+            semantic_labels = torch.randint(0, 128, (batch_size, num_anchors), device=device)
+            bbox_targets = torch.randn(batch_size, num_anchors, 6, device=device)
+            confidence_targets = torch.rand(batch_size, num_anchors, device=device)
+
+        return {
+            'semantic_labels': semantic_labels,
+            'bbox_targets': bbox_targets,
+            'confidence_targets': confidence_targets
         }
 
-        return targets
+    def _create_lc_nerf_targets(self, results: Dict[str, Any], batch: Dict[str, Any]) -> Dict[str, torch.Tensor]:
+        """
+        LC-NeRF training targets: Use real values from batch if available, otherwise use random placeholders
+        batch should contain:
+            - rgb_gt: [B, H, W, 3]  float  Real multi-view RGB
+            - depth_gt: [B, H, W]   float  Real depth maps
+            - semantic_targets: [B, 512] float  Text embedding ground truth
+        """
+        batch_size, height, width = results['rgb_map'].shape[:3]
+        device = self.device
 
-    def _create_lc_nerf_targets(self, results: Dict[str, Any], images: torch.Tensor) -> Dict[str, torch.Tensor]:
-        """Create LC-NeRF training targets"""
-        batch_size, height, width = images.shape[0], images.shape[2], images.shape[3]
+        # Try to read real values
+        if 'rgb_gt' in batch:
+            rgb_gt = batch['rgb_gt']
+            # If batch format is [B, H, W, 3], use directly
+            # If format is [B, 3, H, W], need to permute
+            if rgb_gt.dim() == 4 and rgb_gt.shape[1] == 3:
+                rgb_gt = rgb_gt.permute(0, 2, 3, 1)
+        else:
+            # Fallback: Random RGB
+            rgb_gt = torch.rand(batch_size, height, width, 3, device=device)
 
-        # Create virtual targets
-        targets = {
-            'rgb_gt': images.permute(0, 2, 3, 1).reshape(batch_size, -1, 3),
-            'semantic_targets': torch.randn(batch_size, 512, device=self.device)
+        if 'semantic_targets' in batch:
+            semantic_targets = batch['semantic_targets']
+        else:
+            # Fallback: Random text embeddings
+            semantic_targets = torch.randn(batch_size, 512, device=device)
+
+        return {
+            'rgb_gt': rgb_gt,
+            'semantic_targets': semantic_targets
         }
-
-        return targets
 
     def validate(self, dataloader: DataLoader) -> Dict[str, float]:
-        """Validate model"""
+        """验证模型"""
         logger.info("Starting validation...")
 
-        # Set evaluation mode
+        # 设置评估模式
         if self.hsde:
             self.hsde.eval()
         if self.lc_nerf:
@@ -517,10 +571,10 @@ class LSVRSETrainer:
             with tqdm(dataloader, desc="Validation") as pbar:
                 for batch in pbar:
                     try:
-                        # Forward pass
+                        # 前向传播
                         losses = self.train_step(batch)
 
-                        # Update losses
+                        # 更新损失
                         for key, value in losses.items():
                             if key in val_losses:
                                 val_losses[key] += value
@@ -531,14 +585,14 @@ class LSVRSETrainer:
                         logger.error(f"Error in validation batch: {str(e)}")
                         continue
 
-        # Calculate average losses
+        # 计算平均损失
         for key in val_losses:
             val_losses[key] /= num_batches
 
         return val_losses
 
     def save_checkpoint(self, epoch: int, is_best: bool = False):
-        """Save checkpoint"""
+        """保存检查点"""
         self.model_manager.save_models(epoch)
 
         if is_best:
@@ -553,29 +607,29 @@ class LSVRSETrainer:
 
     def train(self, train_dataloader: DataLoader, val_dataloader: Optional[DataLoader] = None,
               num_epochs: int = 100):
-        """Main training loop"""
+        """主训练循环"""
         logger.info("Starting training...")
 
-        # Set up models
+        # 设置模型
         self.setup_models()
 
         for epoch in range(num_epochs):
             self.current_epoch = epoch
             epoch_start = time.time()
 
-            # Train one epoch
+            # 训练一个epoch
             train_losses = self.train_epoch(train_dataloader, epoch)
 
-            # Validate
+            # 验证
             val_losses = None
             if val_dataloader is not None:
                 val_losses = self.validate(val_dataloader)
 
-            # Update learning rate
+            # 更新学习率
             if self.scheduler is not None:
                 self.scheduler.step()
 
-            # Log to WandB
+            # 记录到WandB
             if self.use_wandb:
                 log_dict = {
                     'epoch': epoch,
@@ -595,11 +649,11 @@ class LSVRSETrainer:
 
                 wandb.log(log_dict)
 
-            # Save checkpoint
+            # 保存检查点
             if (epoch + 1) % self.config.checkpoint_config['save_freq'] == 0:
                 is_best = False
                 if val_losses is not None:
-                    current_metric = -val_losses['total_loss']  # lower loss is better
+                    current_metric = -val_losses['total_loss']  # 损失越小越好
                     if current_metric > self.best_metric:
                         self.best_metric = current_metric
                         is_best = True
@@ -618,21 +672,21 @@ class LSVRSETrainer:
             wandb.finish()
 
 def collate_fn(batch):
-    """Custom collation function supporting poses field"""
-    # 1. Remove mesh to avoid default_collate error
+    """支持 poses 字段的自定义打包"""
+    # 1. 弹出 mesh 避免 default_collate 报错
     meshes = [item.pop('mesh') for item in batch]
     poses  = [item.pop('poses') for item in batch]
 
-    # 2. Use default collation for the rest
+    # 2. 其余用默认打包
     collated = torch.utils.data.default_collate(batch)
 
-    # 3. Return poses as list (to be parsed during training)
+    # 3. 把 poses 按列表原样返回（后续训练自己解析）
     collated['poses'] = poses          # list[dict or None]
     collated['mesh']  = meshes         # list[TriangleMesh]
     return collated
 
 def main():
-    """Main function"""
+    """主函数"""
     parser = argparse.ArgumentParser(description="LSVR-SE Training Script")
     parser.add_argument('--config', type=str, default="default",
                         choices=['default', 'fast', 'production'],
@@ -654,7 +708,7 @@ def main():
 
     args = parser.parse_args()
 
-    # Select configuration
+    # 选择配置
     if args.config == "fast":
         config = FAST_CONFIG
     elif args.config == "production":
@@ -662,18 +716,18 @@ def main():
     else:
         config = DEFAULT_CONFIG
 
-    # Override configuration
+    # 覆盖配置
     if args.batch_size is not None:
         config.training_config['batch_size'] = args.batch_size
 
     if args.learning_rate is not None:
         config.training_config['learning_rate'] = args.learning_rate
 
-    # Create datasets
+    # 创建数据集
     train_dataset = LSVRSEDataset(args.data_root, split="train")
     val_dataset = LSVRSEDataset(args.data_root, split="val")
 
-    # Create data loaders
+    # 创建数据加载器
     train_dataloader = DataLoader(
         train_dataset,
         batch_size=config.training_config['batch_size'],
@@ -692,16 +746,16 @@ def main():
         collate_fn=collate_fn
     )
 
-    # Create trainer
+    # 创建训练器
     trainer = LSVRSETrainer(config, use_wandb=args.use_wandb)
 
     if args.validate_only:
-        # Validation-only mode
+        # 仅验证模式
         trainer.setup_models()
         val_losses = trainer.validate(val_dataloader)
         print("Validation results:", val_losses)
     else:
-        # Normal training mode
+        # 正常训练模式
         trainer.train(train_dataloader, val_dataloader, args.num_epochs)
 
     print("Training completed successfully!")
