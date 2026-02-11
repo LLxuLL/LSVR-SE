@@ -1,301 +1,146 @@
-# LSVR-SE 项目层次结构说明
+LSVR-SE (Language-Guided Semantic Editing in Single-View 3D Reconstruction) 
 
-## 项目概述
-LSVR-SE (Language-Guided Semantic Editing in Single-View 3D Reconstruction) 是一个先进的3D重建和编辑系统，支持从单张图像生成可编辑的3D模型。
-
-## 项目结构
-
-```
 LSVR-SE/
-├── 📁 src/                          # 源代码目录
-│   ├── 📄 hsde.py                   # HSDE核心实现 (Hierarchical Semantic Disentanglement Encoder)
-│   ├── 📄 lc_nerf.py                # LC-NeRF核心实现 (Language-Conditioned Neural Radiance Field)
-│   ├── 📄 dpee.py                   # DPEE核心实现 (Differentiable Programmatic Editing Engine)
-│   ├── 📄 lsvr_se_config.py         # 统一配置系统
-│   ├── 📄 main.py                   # 主程序入口
-│   ├── 📄 train.py                  # 完整训练脚本
-│   ├── 📄 reasoning.py              # 推理脚本
-│   └── 📄 application.py            # Web应用界面
+├── src/                       
+│   ├── hsde.py                 
+│   ├── lc_nerf.py               
+│   ├── dpee.py                 
+│   ├── lsvr_se_config.py      
+│   ├── main.py                
+│   ├── train.py                 
+│   ├── reasoning.py           
+│   └── application.py          
 │
-├── 📁 models/                       # 模型文件目录
-│   ├── 📁 hsde/                     # HSDE模型文件
-│   │   ├── 📄 model.pth             # HSDE主模型文件
-│   │   ├── 📄 config.json           # HSDE配置文件
-│   │   └── 📄 checkpoint_epoch_50.pth  # 检查点文件
-│   ├── 📁 lc_nerf/                  # LC-NeRF模型文件
-│   │   ├── 📄 model.pth             # LC-NeRF主模型文件
-│   │   ├── 📄 config.json           # LC-NeRF配置文件
-│   │   └── 📄 checkpoint_epoch_100.pth  # 检查点文件
-│   └── 📁 dpee/                     # DPEE模型文件
-│       ├── 📄 model.pth             # DPEE主模型文件
-│       ├── 📄 config.json           # DPEE配置文件
-│       └── 📄 checkpoint_epoch_75.pth   # 检查点文件
+├── models/                     
+│   ├── hsde/                     
+│   │   ├── model.pth          
+│   │   ├── config.json          
+│   │   └── checkpoint_epoch_50.pth  
+│   ├── lc_nerf/                  
+│   │   ├── model.pth             
+│   │   ├── config.json           
+│   │   └── checkpoint_epoch_100.pth 
+│   └── dpee/                    
+│       ├── model.pth           
+│       ├── config.json           
+│       └── checkpoint_epoch_75.pth  
 │
-├── 📁 data/                         # 数据集目录
-│   ├── 📁 train/                    # 训练数据集
-│   │   ├── 📁 images/               # 训练图像
-│   │   │   ├── 📄 0001.jpg          # 训练图像文件
-│   │   │   ├── 📄 0002.png          # 训练图像文件
-│   │   │   └── 📄 ...               # 更多训练图像
-│   │   ├── 📁 meshes/               # 训练网格
-│   │   │   ├── 📄 0001.ply          # 训练网格文件
-│   │   │   ├── 📄 0002.ply          # 训练网格文件
-│   │   │   └── 📄 ...               # 更多训练网格
-│   │   ├── 📁 meshes/               # 训练相机参数
-│   │   │   ├── 📄 0001.json         # 训练相机参数
-│   │   │   ├── 📄 0002.json         # 训练相机参数
-│   │   │   └── 📄 ...               # 更多训练相机参数
-│   │   └── 📁 texts/                # 训练文本
-│   │       ├── 📄 0001.txt          # 训练文本文件
-│   │       ├── 📄 0002.txt          # 训练文本文件
-│   │       └── 📄 ...               # 更多训练文本
-│   ├── 📁 val/                      # 验证数据集
-│   │   ├── 📁 images/               # 验证图像
-│   │   ├── 📁 meshes/               # 验证网格
-│   │   ├── 📁 poses/                # 验证相机参数
-│   │   └── 📁 texts/                # 验证文本
-│   └── 📁 test/                     # 测试数据集
-│       ├── 📁 images/               # 测试图像
-│       ├── 📁 meshes/               # 测试网格
-│       ├── 📁 poses/                # 测试相机参数
-│       └── 📁 texts/                # 测试文本
+├── data/                        
+│   ├── train/                    
+│   │   ├── images/              
+│   │   │   ├── 0001.jpg          
+│   │   │   ├── 0002.png          
+│   │   │   └── ...               
+│   │   ├── meshes/               
+│   │   │   ├── 0001.ply          
+│   │   │   ├── 0002.ply         
+│   │   │   └── ...               
+│   │   ├── meshes/              
+│   │   │   ├── 0001.json         
+│   │   │   ├── 0002.json        
+│   │   │   └── ...              
+│   │   └── texts/               
+│   │       ├── 0001.txt        
+│   │       ├── 0002.txt          
+│   │       └── ...              
+│   ├── val/                      
+│   │   ├── images/               
+│   │   ├── meshes/               
+│   │   ├── poses/                
+│   │   └── texts/                
+│   └── test/                     
+│       ├── images/              
+│       ├── meshes/               
+│       ├── poses/                
+│       └── texts/                
 │
-├── 📁 output/                       # 输出结果目录
-│   ├── 📁 results/                  # 推理结果
-│   │   ├── 📁 single_001/           # 单图像处理结果
-│   │   │   ├── 📄 final_mesh.ply    # 最终3D模型
-│   │   │   └── 📄 inference_results.json  # 结果信息
-│   │   ├── 📁 batch_001/            # 批量处理结果
-│   │   └── 📁 interactive_001/      # 交互式编辑结果
-│   ├── 📁 visualizations/           # 可视化结果
-│   │   ├── 📄 result_001.png        # 结果可视化图片
-│   │   └── 📄 comparison_001.png    # 对比可视化图片
-│   └── 📁 logs/                     # 输出日志
-│       ├── 📄 processing.log        # 处理日志
-│       └── 📄 errors.log            # 错误日志
+├── output/                       
+│   ├── results/                  
+│   │   ├── single_001/          
+│   │   │   ├── final_mesh.ply    
+│   │   │   └── inference_results.json 
+│   │   ├── batch_001/            
+│   │   └── interactive_001/      
+│   ├── visualizations/          
+│   │   ├── result_001.png       
+│   │   └── comparison_001.png    
+│   └── logs/                     
+│       ├── processing.log      
+│       └── errors.log           
 │
-├── 📁 checkpoints/                  # 检查点目录
-│   ├── 📄 checkpoint_epoch_50.pth   # 第50轮检查点
-│   ├── 📄 checkpoint_epoch_100.pth  # 第100轮检查点
-│   └── 📄 best_checkpoint.pth       # 最佳检查点
+├── checkpoints/                  
+│   ├── checkpoint_epoch_50.pth   
+│   ├── checkpoint_epoch_100.pth 
+│   └── best_checkpoint.pth       
 │
-├── 📁 logs/                         # 日志目录
-│   ├── 📄 lsvr_se.log               # 主日志文件
-│   ├── 📄 train.log                 # 训练日志
-│   ├── 📄 inference.log             # 推理日志
-│   └── 📄 webapp.log                # Web应用日志
+├── logs/                         
+│   ├── lsvr_se.log               
+│   ├── train.log                
+│   ├── inference.log        
+│   └── webapp.log               
 │
-├── 📁 docs/                         # 文档目录
-│   ├── 📄 README.md                 # 项目说明文档
-│   ├── 📄 INSTALLATION_GUIDE.md     # 安装指南
-│   ├── 📄 USAGE_GUIDE.md            # 使用指南
-│   ├── 📄 API_REFERENCE.md          # API参考文档
-│   └── 📄 TECHNICAL_REPORT.md       # 技术报告
+├── docs/                        
+│   ├── README.md                
+│   ├── INSTALLATION_GUIDE.md  
+│   ├── USAGE_GUIDE.md          
+│   ├── API_REFERENCE.md         
+│   └── TECHNICAL_REPORT.md      
 │
-├── 📄 requirements.txt              # Python依赖包列表
-├── 📄 setup.py                      # 安装脚本
-├── 📄 run.bat                       # Windows启动脚本
-├── 📄 run.sh                        # Linux/Mac启动脚本
-├── 📄 train.py                      # 训练入口脚本
-├── 📄 reasoning.py                  # 推理入口脚本
-└── 📄 application.py                # Web应用入口脚本
-```
+├── requirements.txt             
+├── setup.py                     
+├── run.bat                       
+├── run.sh                       
+├── train.py                      
+├── reasoning.py                 
+└── application.py              
 
-## 文件位置说明
-
-### 1. 模型文件位置
-```
 models/
 ├── hsde/
-│   ├── model.pth              # HSDE主模型权重
-│   ├── config.json            # HSDE模型配置
-│   └── checkpoint_epoch_*.pth # HSDE训练检查点
+│   ├── model.pth            
+│   └── config.json            
 ├── lc_nerf/
-│   ├── model.pth              # LC-NeRF主模型权重
-│   ├── config.json            # LC-NeRF模型配置
-│   └── checkpoint_epoch_*.pth # LC-NeRF训练检查点
+│   ├── model.pth             
+│   └── config.json     
 └── dpee/
-    ├── model.pth              # DPEE主模型权重
-    ├── config.json            # DPEE模型配置
-    └── checkpoint_epoch_*.pth # DPEE训练检查点
-```
+    ├── model.pth           
+    └── config.json   
 
-### 2. 数据集位置
-```
 data/
-├── train/                     # 训练数据集
-│   ├── images/0001.jpg        # 训练图像 (放在images子目录)
-│   ├── meshes/0001.ply        # 训练网格 (放在meshes子目录)
-│   └── texts/0001.txt         # 训练文本 (放在texts子目录)
-├── val/                       # 验证数据集
-│   ├── images/                # 验证图像
-│   ├── meshes/                # 验证网格
-│   └── texts/                 # 验证文本
-└── test/                      # 测试数据集
-    ├── images/                # 测试图像
-    ├── meshes/                # 测试网格
-    └── texts/                 # 测试文本
-```
+├── train/                   
+│   ├── images/0001.jpg      
+│   ├── meshes/0001.ply        
+│   └── texts/0001.txt        
+├── val/                       
+│   ├── images/               
+│   ├── meshes/                
+│   └── texts/                
+└── test/                     
+    ├── images/                
+    ├── meshes/                
+    └── texts/                 
 
-### 3. 预训练模型下载位置
-```
-# 自动下载位置 (由transformers库管理)
 ~/.cache/huggingface/transformers/
-├── google/vit-base-patch16-224/     # ViT模型
+├── google/vit-base-patch16-224/ 
 │   ├── config.json
 │   ├── pytorch_model.bin
 │   └── ...
-├── openai/clip-vit-base-patch32/    # CLIP模型
+├── openai/clip-vit-base-patch32/ 
 │   ├── config.json
 │   ├── pytorch_model.bin
 │   └── ...
-└── meta-llama/Llama-2-7b-chat-hf/   # LLaMA模型 (需要申请权限)
+└── meta-llama/Llama-2-7b-chat-hf/  
     ├── config.json
     ├── pytorch_model.bin
     └── ...
-```
 
-### 4. 输出结果位置
-```
 output/
 ├── results/
-│   ├── single_001/            # 单图像处理结果
-│   │   ├── final_mesh.ply     # 最终3D模型
-│   │   └── inference_results.json  # 处理结果信息
-│   ├── batch_001/             # 批量处理结果
-│   └── interactive_001/       # 交互式编辑结果
-├── visualizations/            # 可视化结果
-└── logs/                      # 处理日志
-```
-
-### 5. 检查点位置
-```
-checkpoints/
-├── checkpoint_epoch_50.pth    # 第50轮检查点
-├── checkpoint_epoch_100.pth   # 第100轮检查点
-└── best_checkpoint.pth        # 最佳性能检查点
-```
-
-## 数据格式要求
-
-### 1. 图像数据
-- **格式**: JPG, PNG, BMP
-- **尺寸**: 建议224x224像素
-- **颜色**: RGB彩色图像
-- **命名**: 建议使用连续数字命名 (0001.jpg, 0002.jpg, ...)
-
-### 2. 网格数据
-- **格式**: PLY (推荐), OBJ, STL
-- **内容**: 三角形网格
-- **属性**: 顶点坐标、法线信息
-- **命名**: 与对应图像同名 (0001.ply, 0002.ply, ...)
-
-### 3. 文本数据
-- **格式**: 纯文本文件 (.txt)
-- **内容**: 自然语言编辑指令
-- **编码**: UTF-8
-- **命名**: 与对应图像同名 (0001.txt, 0002.txt, ...)
-
-### 4. 示例数据内容
-```
-# images/0001.jpg - 建筑立面图像
-# meshes/0001.ply - 对应的3D网格
-# texts/0001.txt - 编辑指令
-添加窗户
-
-# images/0002.jpg - 室内场景图像
-# meshes/0002.ply - 对应的3D网格
-# texts/0002.txt - 编辑指令
-移除门并添加窗户
-```
-
-## 环境配置
-
-### 1. Python环境
-```bash
-# 创建虚拟环境
-conda create -n lsvr_se python=3.9
-conda activate lsvr_se
-
-# 安装依赖
-pip install -r requirements.txt
-```
-
-### 2. 硬件要求
-- **GPU**: NVIDIA GPU with 16GB+ VRAM
-- **CPU**: 多核处理器 (推荐16核+)
-- **内存**: 64GB+ RAM
-- **存储**: 100GB+ 可用空间
-
-### 3. 软件依赖
-- **PyTorch**: 1.12+ (CUDA 11.8+)
-- **Transformers**: 4.21+
-- **Open3D**: 0.15+
-- **Streamlit**: 1.12+
-
-## 启动和运行
-
-### 1. 启动Web应用
-```bash
-# Windows
-run.bat
-
-# Linux/Mac
-./run.sh
-```
-
-### 2. 启动训练
-```bash
-python train.py --config default --num_epochs 100 --use_wandb
-```
-
-### 3. 启动推理
-```bash
-python reasoning.py --mode single --image image.jpg --text "添加窗户"
-```
-
-## 故障排除
-
-### 1. 模型文件缺失
-```bash
-# 手动下载预训练模型
-huggingface-cli download google/vit-base-patch16-224
-huggingface-cli download openai/clip-vit-base-patch32
-```
-
-### 2. 数据格式错误
-- 检查图像格式和尺寸
-- 验证网格文件完整性
-- 确保文本文件编码正确
-
-### 3. 内存不足
-- 减小批次大小
-- 使用快速配置模式
-- 启用混合精度训练
-
-## 扩展开发
-
-### 1. 添加新组件
-```python
-# 在src/目录下创建新组件
-# 在lsvr_se_config.py中添加配置
-# 在main.py中集成新组件
-```
-
-### 2. 添加新功能
-```python
-# 在application.py中添加新页面
-# 在reasoning.py中添加新推理模式
-# 在train.py中添加新训练逻辑
-```
-
-### 3. 自定义模型
-```python
-# 在models/目录下添加新模型
-# 更新配置文件
-# 修改训练脚本以支持新模型
-```
-
----
+│   ├── single_001/          
+│   │   ├── final_mesh.ply    
+│   │   └── inference_results.json  
+│   ├── batch_001/             
+│   └── interactive_001/       
+├── visualizations/            
+└── logs/                  
 
 **注意**: 这是一个研究级别的项目，需要大量计算资源。在生产环境中使用时，请根据实际需求进行优化和调整。
